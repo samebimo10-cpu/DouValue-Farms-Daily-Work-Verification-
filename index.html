@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DouValue Farms — Daily Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --leaf:#1E5631; --leaf-dark:#153F24; --habanero:#E8590C; --habanero-dark:#C6480A;
+  --paper:#F6F5F0; --card:#FFFFFF; --ink:#1C1B18; --muted:#6E6C64; --line:#E3E1D8;
+  --good:#2B7A3F; --warn:#B7791F; --bad:#B0331E;
+  --radius:12px;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html{font-size:16px;}
+body{
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background:var(--paper); color:var(--ink); min-height:100vh; padding-bottom:96px;
+}
+.num{font-variant-numeric:tabular-nums;}
+
+/* ===== Top bar ===== */
+.topbar{background:var(--leaf); color:#fff; padding:14px 16px 0; position:sticky; top:0; z-index:40;
+  box-shadow:0 2px 8px rgba(20,50,30,.25);}
+.brandrow{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+.brand{font-weight:800; letter-spacing:.4px; font-size:1.02rem; text-transform:uppercase;}
+.brand small{display:block; font-weight:500; font-size:.68rem; letter-spacing:1.6px; opacity:.75; text-transform:uppercase;}
+.daypick{display:flex; align-items:center; gap:6px;}
+.daypick input[type=date]{
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); color:#fff;
+  border-radius:8px; padding:8px 10px; font-size:.9rem; font-family:inherit; min-height:40px;
+}
+.ledger{display:flex; gap:18px; padding:10px 2px 12px; align-items:baseline;}
+.ledger .stat{display:flex; flex-direction:column;}
+.ledger .v{font-size:1.15rem; font-weight:800;}
+.ledger .l{font-size:.62rem; letter-spacing:1.2px; text-transform:uppercase; opacity:.72;}
+.ledger .accent{color:#FFC49B;}
+
+/* ===== Section tabs (field tags) ===== */
+.tabs{display:flex; gap:8px; overflow-x:auto; padding:10px 16px; background:var(--paper);
+  position:sticky; top:104px; z-index:30; border-bottom:1px solid var(--line);
+  scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:0 0 auto; border:1.5px solid var(--line); background:var(--card); color:var(--ink);
+  border-radius:999px; padding:9px 14px; font-size:.83rem; font-weight:600; font-family:inherit;
+  display:flex; align-items:center; gap:6px; min-height:40px; cursor:pointer;}
+.tab .cnt{background:var(--paper); border-radius:999px; min-width:20px; height:20px; display:none;
+  align-items:center; justify-content:center; font-size:.7rem; font-weight:800; padding:0 5px; color:var(--muted);}
+.tab .cnt.show{display:inline-flex;}
+.tab.active{background:var(--leaf); border-color:var(--leaf); color:#fff;}
+.tab.active .cnt{background:rgba(255,255,255,.2); color:#fff;}
+
+/* ===== Cards & forms ===== */
+main{padding:14px 14px 0; max-width:640px; margin:0 auto;}
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:16px 14px; margin-bottom:14px;}
+.sect-note{font-size:.8rem; color:var(--muted); margin-bottom:12px; line-height:1.45;}
+.field{margin-bottom:13px;}
+.field label{display:block; font-size:.72rem; font-weight:700; letter-spacing:.8px;
+  text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+  width:100%; border:1.5px solid var(--line); border-radius:9px; background:#FCFCFA;
+  padding:11px 12px; font-size:1rem; font-family:inherit; color:var(--ink); min-height:46px;
+  appearance:none; -webkit-appearance:none;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236E6C64' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; padding-right:34px;}
+textarea{min-height:72px; resize:vertical;}
+input:focus,select:focus,textarea:focus{outline:none; border-color:var(--leaf); background:#fff;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+.calc{background:#F1F6F0; border:1.5px dashed #BFD3C2; border-radius:9px; padding:11px 12px;
+  font-weight:800; min-height:46px; display:flex; align-items:center;}
+.calc small{font-weight:600; color:var(--muted); margin-right:8px; font-size:.72rem; text-transform:uppercase; letter-spacing:.8px;}
+
+/* toggle */
+.toggle{display:flex; border:1.5px solid var(--line); border-radius:9px; overflow:hidden;}
+.toggle button{flex:1; border:none; background:#FCFCFA; padding:12px; font-size:.95rem; font-weight:700;
+  font-family:inherit; color:var(--muted); cursor:pointer;}
+.toggle button.on{background:var(--leaf); color:#fff;}
+
+/* buttons */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none;
+  border-radius:10px; font-family:inherit; font-weight:800; cursor:pointer; min-height:48px;
+  font-size:.95rem; padding:12px 18px; width:100%;}
+.btn-add{background:var(--leaf); color:#fff;}
+.btn-add:active{background:var(--leaf-dark);}
+.btn-ghost{background:transparent; color:var(--bad); border:1.5px solid var(--line); min-height:42px; font-weight:700;}
+.btn-save{background:var(--habanero); color:#fff;}
+
+/* entry list */
+.entries{margin-bottom:14px;}
+.entries h3{font-size:.72rem; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin:2px 2px 8px;}
+.entry{background:var(--card); border:1px solid var(--line); border-left:4px solid var(--leaf);
+  border-radius:10px; padding:12px 12px 10px; margin-bottom:8px;}
+.entry .e-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+.entry .e-title{font-weight:800; font-size:.95rem;}
+.entry .e-val{font-weight:800; color:var(--habanero-dark); white-space:nowrap;}
+.entry .e-sub{font-size:.82rem; color:var(--muted); margin-top:3px; line-height:1.45;}
+.entry .e-actions{margin-top:8px; display:flex; gap:14px;}
+.entry .e-actions button{background:none; border:none; font-family:inherit; font-size:.8rem;
+  font-weight:700; cursor:pointer; padding:4px 0;}
+.entry .e-edit{color:var(--leaf);}
+.entry .e-del{color:var(--bad);}
+.empty{border:1.5px dashed var(--line); border-radius:10px; padding:18px 14px; text-align:center;
+  color:var(--muted); font-size:.86rem; margin-bottom:8px;}
+
+/* bottom action bar */
+.bottombar{position:fixed; left:0; right:0; bottom:0; z-index:50; background:#fff;
+  border-top:1px solid var(--line); padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  display:flex; gap:10px; max-width:640px; margin:0 auto;}
+.bottombar .btn{min-height:50px;}
+.btn-pdf{background:var(--habanero); color:#fff; flex:1.4;}
+.btn-pdf:active{background:var(--habanero-dark);}
+.btn-savebar{background:var(--leaf); color:#fff; flex:1;}
+
+.toast{position:fixed; bottom:84px; left:50%; transform:translateX(-50%); background:var(--ink);
+  color:#fff; padding:11px 18px; border-radius:999px; font-size:.86rem; font-weight:600; z-index:60;
+  opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap;}
+.toast.show{opacity:1;}
+.saved-dot{width:8px;height:8px;border-radius:50%;background:#8fd6a4;display:inline-block;margin-right:6px;vertical-align:1px;}
+h2.sect{font-size:1.05rem; font-weight:800; margin:4px 2px 10px; display:flex; align-items:center; gap:8px;}
+h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); border-radius:3px;}
+@media (max-width:380px){ .row3{grid-template-columns:1fr 1fr;} }
+@media print{ body *{display:none;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brandrow">
+    <div class="brand">DouValue Farms<small>Daily Field Report</small></div>
+    <div class="daypick"><input type="date" id="reportDate"></div>
+  </div>
+  <div class="ledger">
+    <div class="stat"><span class="v num" id="ledKg">0 kg</span><span class="l">Harvest today</span></div>
+    <div class="stat"><span class="v num accent" id="ledVal">₦0</span><span class="l">Harvest value</span></div>
+    <div class="stat"><span class="v num" id="ledHrs">0 hrs</span><span class="l">Labour</span></div>
+    <div class="stat"><span class="v num" id="ledIssues">0</span><span class="l">Flags</span></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-s="summary">Summary<span class="cnt" id="c-summary"></span></button>
+  <button class="tab" data-s="harvest">Harvest<span class="cnt" id="c-harvest"></span></button>
+  <button class="tab" data-s="activity">Activities<span class="cnt" id="c-activity"></span></button>
+  <button class="tab" data-s="welfare">Plant Welfare<span class="cnt" id="c-welfare"></span></button>
+  <button class="tab" data-s="inputs">Inputs Applied<span class="cnt" id="c-inputs"></span></button>
+  <button class="tab" data-s="losses">Losses<span class="cnt" id="c-losses"></span></button>
+  <button class="tab" data-s="requisitions">Requisitions<span class="cnt" id="c-requisitions"></span></button>
+  <button class="tab" data-s="defects">Defects<span class="cnt" id="c-defects"></span></button>
+</div>
+
+<main>
+  <!-- SUMMARY -->
+  <section id="s-summary">
+    <h2 class="sect">Daily Summary</h2>
+    <div class="card">
+      <div class="sect-note">One entry per day — the north star. Harvest kg and labour hours fill in automatically from the other tabs.</div>
+      <div class="field"><label>Prepared by</label><select id="su_preparedBy"></select></div>
+      <div class="row2">
+        <div class="field"><label>Weather</label><select id="su_weather"></select></div>
+        <div class="field"><label>Overall status</label><select id="su_status"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Temp high (°C)</label><input type="number" id="su_tHigh" inputmode="decimal"></div>
+        <div class="field"><label>Temp low (°C)</label><input type="number" id="su_tLow" inputmode="decimal"></div>
+      </div>
+      <div class="field"><label>All zones normal?</label>
+        <div class="toggle" id="su_allNormal">
+          <button type="button" data-v="Y">Yes — all normal</button>
+          <button type="button" data-v="N">No — see Welfare</button>
+        </div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>Harvest (kg)</label><div class="calc num" id="su_calcKg">0</div></div>
+        <div class="field"><label>Labour (hrs)</label><div class="calc num" id="su_calcHrs">0</div></div>
+        <div class="field"><label>Open issues EOD</label><input type="number" id="su_openIssues" inputmode="numeric" value="0"></div>
+      </div>
+      <div class="field"><label>Key wins</label><textarea id="su_wins" placeholder="What went well today"></textarea></div>
+      <div class="field"><label>Key issues / risks</label><textarea id="su_issues" placeholder="What needs attention"></textarea></div>
+      <div class="field"><label>Tomorrow focus</label><textarea id="su_tomorrow" placeholder="Plan for tomorrow"></textarea></div>
+      <div class="field"><label>Reviewed by</label><input type="text" id="su_reviewedBy" placeholder="e.g. Gi"></div>
+    </div>
+  </section>
+
+  <!-- HARVEST -->
+  <section id="s-harvest" hidden>
+    <h2 class="sect">Harvest Log</h2>
+    <div class="entries" id="list-harvest"></div>
+    <div class="card">
+      <div class="row2">
+        <div class="field"><label>Location</label><select id="h_location"></select></div>
+        <div class="field"><label>Crop</label><select id="h_crop"></select></div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>Grade</label><select id="h_grade"></select></div>
+        <div class="field"><label>Qty (kg)</label><input type="number" id="h_qty" inputmode="decimal" step="0.1"></div>
+        <div class="field"><label>Price (₦/kg)</label><input type="number" id="h_price" inputmode="numeric"></div>
+      </div>
+      <div class="field"><div class="calc num" id="h_value"><small>Value</small>₦0</div></div>
+      <div class="field"><label>Picked by</label><input type="text" id="h_pickedBy" placeholder="Names, comma separated"></div>
+      <div class="field"><label>Notes</label><input type="text" id="h_notes"></div>
+      <button class="btn btn-add" id="add-harvest">+ Add harvest entry</button>
+    </div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section id="s-activity" hidden>
+    <h2 class="sect">Activity Log</h2>
+    <div class="entries" id="list-activity"></div>
+    <div class="card">
+      <div class="sect-note">One row per activity. Group routine tasks — e.g. one entry for "Watered all GH zones".</div>
+      <div class="field"><label>Activity type</label><select id="a_type"></select></div>
+      <div class="field"><label>Locations covered</label><input type="text" id="a_locations" placeholder="e.g. GH-01, GH-02, OF-03"></div>
+      <div class="field"><label>Description</label><input type="text" id="a_desc"></div>
+      <div class="field"><label>Staff</label><input type="text" id="a_staff" placeholder="Names, comma separated"></div>
+      <div class="row3">
+        <div class="field"><label>Start</label><input type="time" id="a_start"></div>
+        <div class="field"><label>End</label><input type="time" id="a_end"></div>
+        <div class="field"><label>Duration</label><div class="calc num" id="a_dur">0 h</div></div>
+      </div>
+      <div class="field"><label>Status</label><select id="a_status"></select></div>
+      <div class="field"><label>Notes</label><input type="text" id="a_notes"></div>
+      <button class="btn btn-add" id="add-activity">+ Add activity</button>
+    </div>
+  </section>
+
+  <!-- WELFARE -->
+  <section id="s-welfare" hidden>
+    <h2 class="sect">Plant Welfare</h2>
+    <div class="entries" id="list-welfare"></div>
+    <div class="card">
+      <div class="sect-note">Only log zones with something OFF. If everything is normal, tick "All zones normal" on the Summary tab instead.</div>
+      <div class="row2">
+        <div class="field"><label>Location</label><select id="w_location"></select></div>
+        <div class="field"><label>Crop</label><select id="w_crop"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Growth stage</label><select id="w_stage"></select></div>
+        <div class="field"><label>Plant vigor</label><select id="w_vigor"></select></div>
+      </div>
+      <div class="field"><label>Pest / disease observed</label><input type="text" id="w_pest" placeholder="e.g. Thrips on new leaves"></div>
+      <div class="field"><label>Severity</label><select id="w_severity"></select></div>
+      <div class="field"><label>Action taken</label><input type="text" id="w_action"></div>
+      <div class="field"><label>Follow-up by</label><input type="date" id="w_followup"></div>
+      <div class="field"><label>Notes</label><input type="text" id="w_notes"></div>
+      <button class="btn btn-add" id="add-welfare">+ Add welfare entry</button>
+    </div>
+  </section>
+
+  <!-- INPUTS -->
+  <section id="s-inputs" hidden>
+    <h2 class="sect">Inputs Applied</h2>
+    <div class="entries" id="list-inputs"></div>
+    <div class="card">
+      <div class="sect-note">Every spray, fertigation or chemical. PHI sets the safe-to-harvest date automatically.</div>
+      <div class="field"><label>Product</label><input type="text" id="i_product" placeholder="e.g. Lara Force"></div>
+      <div class="row2">
+        <div class="field"><label>Type</label><select id="i_type"></select></div>
+        <div class="field"><label>Active ingredient</label><input type="text" id="i_ai"></div>
+      </div>
+      <div class="field"><label>Concentration / rate</label><input type="text" id="i_rate" placeholder="e.g. 50 ml / 15 L"></div>
+      <div class="row2">
+        <div class="field"><label>Locations</label><input type="text" id="i_locations" placeholder="e.g. GH-01, OF-03"></div>
+        <div class="field"><label>Crop</label><select id="i_crop"></select></div>
+      </div>
+      <div class="row3">
+        <div class="field"><label>Volume (L/kg)</label><input type="number" id="i_volume" inputmode="decimal" step="0.1"></div>
+        <div class="field"><label>PHI (days)</label><input type="number" id="i_phi" inputmode="numeric"></div>
+        <div class="field"><label>Safe from</label><div class="calc num" id="i_safe" style="font-size:.85rem">—</div></div>
+      </div>
+      <div class="field"><label>Applied by</label><input type="text" id="i_appliedBy"></div>
+      <div class="field"><label>Notes</label><input type="text" id="i_notes"></div>
+      <button class="btn btn-add" id="add-inputs">+ Add input record</button>
+    </div>
+  </section>
+
+  <!-- LOSSES -->
+  <section id="s-losses" hidden>
+    <h2 class="sect">Losses</h2>
+    <div class="entries" id="list-losses"></div>
+    <div class="card">
+      <div class="row2">
+        <div class="field"><label>Location</label><select id="l_location"></select></div>
+        <div class="field"><label>Crop</label><select id="l_crop"></select></div>
+      </div>
+      <div class="field"><label>Cause</label><select id="l_cause"></select></div>
+      <div class="row2">
+        <div class="field"><label>Qty lost (kg/units)</label><input type="number" id="l_qty" inputmode="decimal" step="0.1"></div>
+        <div class="field"><label>Est. value lost (₦)</label><input type="number" id="l_value" inputmode="numeric"></div>
+      </div>
+      <div class="field"><label>Reported by</label><select id="l_reportedBy"></select></div>
+      <div class="field"><label>Description</label><input type="text" id="l_desc"></div>
+      <div class="field"><label>Action taken</label><input type="text" id="l_action"></div>
+      <button class="btn btn-add" id="add-losses">+ Add loss record</button>
+    </div>
+  </section>
+
+  <!-- REQUISITIONS -->
+  <section id="s-requisitions" hidden>
+    <h2 class="sect">Requisitions</h2>
+    <div class="entries" id="list-requisitions"></div>
+    <div class="card">
+      <div class="row2">
+        <div class="field"><label>Requested by</label><select id="r_requestedBy"></select></div>
+        <div class="field"><label>Type</label><select id="r_type"></select></div>
+      </div>
+      <div class="field"><label>Item / service</label><input type="text" id="r_item"></div>
+      <div class="row3">
+        <div class="field"><label>Qty</label><input type="number" id="r_qty" inputmode="decimal"></div>
+        <div class="field"><label>Unit</label><input type="text" id="r_unit" placeholder="e.g. bags"></div>
+        <div class="field"><label>Location</label><select id="r_location"></select></div>
+      </div>
+      <div class="field"><label>Reason</label><input type="text" id="r_reason"></div>
+      <div class="row2">
+        <div class="field"><label>Priority</label><select id="r_priority"></select></div>
+        <div class="field"><label>Needed by</label><input type="date" id="r_neededBy"></div>
+      </div>
+      <div class="field"><label>Est. cost (₦)</label><input type="number" id="r_cost" inputmode="numeric"></div>
+      <button class="btn btn-add" id="add-requisitions">+ Add requisition</button>
+    </div>
+  </section>
+
+  <!-- DEFECTS -->
+  <section id="s-defects" hidden>
+    <h2 class="sect">Defects &amp; Issues</h2>
+    <div class="entries" id="list-defects"></div>
+    <div class="card">
+      <div class="sect-note">Equipment, security, HR — anything broken, off, or worth flagging.</div>
+      <div class="row2">
+        <div class="field"><label>Reported by</label><select id="d_reportedBy"></select></div>
+        <div class="field"><label>Location</label><select id="d_location"></select></div>
+      </div>
+      <div class="field"><label>Type</label><select id="d_type"></select></div>
+      <div class="field"><label>Description</label><input type="text" id="d_desc"></div>
+      <div class="field"><label>Impact</label><input type="text" id="d_impact" placeholder="What it affects"></div>
+      <div class="row2">
+        <div class="field"><label>Priority</label><select id="d_priority"></select></div>
+        <div class="field"><label>Status</label><select id="d_status"></select></div>
+      </div>
+      <div class="field"><label>Action taken</label><input type="text" id="d_action"></div>
+      <div class="row2">
+        <div class="field"><label>Assigned to</label><input type="text" id="d_assigned"></div>
+        <div class="field"><label>Target close</label><input type="date" id="d_target"></div>
+      </div>
+      <div class="field"><label>Cost estimate (₦)</label><input type="number" id="d_cost" inputmode="numeric"></div>
+      <button class="btn btn-add" id="add-defects">+ Add defect / issue</button>
+    </div>
+  </section>
+</main>
+
+<div class="bottombar">
+  <button class="btn btn-savebar" id="btnSave"><span class="saved-dot" id="saveDot" style="display:none"></span>Save day</button>
+  <button class="btn btn-pdf" id="btnPdf">Extract PDF ↧</button>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/* ================= Reference lists (from Daily Report v2 workbook) ================= */
+const L = {
+  locations:["GH-01","GH-02","GH-03","GH-04","GH-05","OF-01","OF-02","OF-03","Nursery","Store","Office","Water System","Piggery","Whole Farm"],
+  crops:["Bell Pepper","Habanero Pepper","Chili Pepper","Tomato","Cucumber","Leafy Greens","Mixed","N/A"],
+  stage:["Nursery","Transplanted","Vegetative","Flowering","Fruiting","Harvesting","End-of-cycle"],
+  weather:["Sunny","Partly Cloudy","Cloudy","Light Rain","Heavy Rain","Storm","Harmattan/Dry","Hot/Humid"],
+  severity:["1 - Negligible","2 - Minor","3 - Moderate","4 - Serious","5 - Critical"],
+  priority:["Low","Medium","High","Critical"],
+  status:["Open","In Progress","Resolved","Closed","Cancelled"],
+  grade:["A - Premium","B - Standard","Reject"],
+  activityType:["Watering/Irrigation","Foliar Spray","Soil Drench","Fertigation","Pruning","Trellising","Weeding","Harvesting","Transplanting","Land Prep","Pest Scouting","Maintenance","Cleaning","Security Patrol","Training/Meeting","Other"],
+  lossCause:["Pest damage","Disease","Weather/heat","Over-ripe","Mechanical damage","Theft","Animal intrusion","Operator error","End of cycle","Other"],
+  reqType:["Inputs/Agrochemicals","Seeds/Seedlings","Tools/Equipment","Maintenance/Repairs","Logistics/Transport","Cash Advance","Office Supplies","Other"],
+  defectType:["Infrastructure","Irrigation","Equipment/Tools","Greenhouse Cover/Net","Pest/Disease outbreak","Security","HR/Personnel","Utilities (Power/Water)","Other"],
+  staff:["Onyinyechi","Godstime","Tossy","Elijah","External Contractor","Other"],
+  vigor:["1 - Failing","2 - Poor","3 - Average","4 - Good","5 - Excellent"],
+  overall:["1 - Critical day","2 - Significant issues","3 - Normal day","4 - Productive day","5 - Excellent day"],
+  inputType:["Foliar Spray","Soil Drench","Fertigation","Granular/Broadcast","Seed Treatment","Other"]
+};
+const SECTIONS = ["harvest","activity","welfare","inputs","losses","requisitions","defects"];
+const $ = id => document.getElementById(id);
+const naira = n => "₦" + (Number(n)||0).toLocaleString("en-NG");
+
+/* ================= Storage adapter: artifact storage → localStorage → memory ================= */
+const mem = {};
+const store = {
+  async get(k){
+    if (window.storage) { try { const r = await window.storage.get(k); return r ? r.value : null; } catch(e){ return null; } }
+    try { return localStorage.getItem(k); } catch(e){ return mem[k] ?? null; }
+  },
+  async set(k,v){
+    if (window.storage) { try { await window.storage.set(k, v); return; } catch(e){} }
+    try { localStorage.setItem(k, v); } catch(e){ mem[k]=v; }
+  }
+};
+
+/* ================= State ================= */
+let report = blank();
+let currentDate = todayISO();
+let editing = {};            // sectionKey -> index being edited
+let dirty = false;
+
+function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function blank(){
+  return { summary:{preparedBy:"Onyinyechi",weather:"",status:"3 - Normal day",tHigh:"",tLow:"",allNormal:"",
+    openIssues:"0",wins:"",issues:"",tomorrow:"",reviewedBy:""},
+    harvest:[],activity:[],welfare:[],inputs:[],losses:[],requisitions:[],defects:[] };
+}
+const key = d => "dvf-report-" + d;
+
+/* ================= Populate dropdowns ================= */
+function fill(id, arr, blankFirst=true){
+  const s=$(id); s.innerHTML = (blankFirst?'<option value="">— select —</option>':"") + arr.map(v=>`<option>${v}</option>`).join("");
+}
+fill("su_preparedBy",L.staff,false); fill("su_weather",L.weather); fill("su_status",L.overall,false);
+fill("h_location",L.locations); fill("h_crop",L.crops); fill("h_grade",L.grade);
+fill("a_type",L.activityType); fill("a_status",L.status);
+fill("w_location",L.locations); fill("w_crop",L.crops); fill("w_stage",L.stage); fill("w_vigor",L.vigor); fill("w_severity",L.severity);
+fill("i_type",L.inputType); fill("i_crop",L.crops);
+fill("l_location",L.locations); fill("l_crop",L.crops); fill("l_cause",L.lossCause); fill("l_reportedBy",L.staff);
+fill("r_requestedBy",L.staff); fill("r_type",L.reqType); fill("r_location",L.locations); fill("r_priority",L.priority);
+fill("d_reportedBy",L.staff); fill("d_location",L.locations); fill("d_type",L.defectType); fill("d_priority",L.priority); fill("d_status",L.status);
+$("su_status").value = "3 - Normal day";
+
+/* ================= Tabs ================= */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    ["summary",...SECTIONS].forEach(s=>$("s-"+s).hidden = (s!==t.dataset.s));
+    window.scrollTo({top:0});
+  });
+});
+
+/* ================= Field maps ================= */
+const FM = {
+  harvest:{p:"h_",f:["location","crop","grade","qty","price","pickedBy","notes"]},
+  activity:{p:"a_",f:["type","locations","desc","staff","start","end","status","notes"]},
+  welfare:{p:"w_",f:["location","crop","stage","vigor","pest","severity","action","followup","notes"]},
+  inputs:{p:"i_",f:["product","type","ai","rate","locations","crop","volume","phi","appliedBy","notes"]},
+  losses:{p:"l_",f:["location","crop","cause","qty","value","reportedBy","desc","action"]},
+  requisitions:{p:"r_",f:["requestedBy","type","item","qty","unit","location","reason","priority","neededBy","cost"]},
+  defects:{p:"d_",f:["reportedBy","location","type","desc","impact","priority","status","action","assigned","target","cost"]}
+};
+const idMap = {harvest:{desc:null}, activity:{}}; // ids match field names with prefixes; special ids below
+function fid(sec, f){
+  const map = {activity:{desc:"a_desc"}, losses:{desc:"l_desc"}, defects:{desc:"d_desc"}};
+  return FM[sec].p + f;
+}
+
+/* ================= Derived calcs ================= */
+function hVal(e){ return (Number(e.qty)||0)*(Number(e.price)||0); }
+function aDur(e){
+  if(!e.start||!e.end) return 0;
+  const [sh,sm]=e.start.split(":").map(Number), [eh,em]=e.end.split(":").map(Number);
+  let m=(eh*60+em)-(sh*60+sm); if(m<0)m+=1440; return Math.round(m/60*10)/10;
+}
+function staffCount(s){ return s? s.split(",").map(x=>x.trim()).filter(Boolean).length : 1; }
+function aHours(e){ return aDur(e)*Math.max(1,staffCount(e.staff)); }
+function safeDate(dateISO, phi){
+  if(phi===""||phi==null||isNaN(Number(phi))) return "—";
+  const d=new Date(dateISO+"T00:00:00"); d.setDate(d.getDate()+Number(phi));
+  return d.toISOString().slice(0,10);
+}
+function totals(){
+  const kg = report.harvest.reduce((s,e)=>s+(Number(e.qty)||0),0);
+  const val = report.harvest.reduce((s,e)=>s+hVal(e),0);
+  const hrs = report.activity.reduce((s,e)=>s+aHours(e),0);
+  const flags = report.welfare.length + report.defects.length + report.losses.length;
+  return {kg:Math.round(kg*10)/10, val, hrs:Math.round(hrs*10)/10, flags};
+}
+function refreshHeader(){
+  const t=totals();
+  $("ledKg").textContent = t.kg+" kg"; $("ledVal").textContent = naira(t.val);
+  $("ledHrs").textContent = t.hrs+" hrs"; $("ledIssues").textContent = t.flags;
+  $("su_calcKg").textContent = t.kg; $("su_calcHrs").textContent = t.hrs;
+  SECTIONS.forEach(s=>{ const c=$("c-"+s); c.textContent=report[s].length; c.classList.toggle("show",report[s].length>0); });
+}
+
+/* live calc previews */
+["h_qty","h_price"].forEach(id=>$(id).addEventListener("input",()=>{
+  $("h_value").innerHTML = "<small>Value</small>"+naira((Number($("h_qty").value)||0)*(Number($("h_price").value)||0));
+}));
+["a_start","a_end"].forEach(id=>$(id).addEventListener("input",()=>{
+  $("a_dur").textContent = aDur({start:$("a_start").value,end:$("a_end").value})+" h";
+}));
+$("i_phi").addEventListener("input",()=>{ $("i_safe").textContent = safeDate(currentDate, $("i_phi").value); });
+
+/* ================= Entry titles for cards & PDF ================= */
+const TITLE = {
+  harvest:e=>[`${e.location||"?"} · ${e.crop||"?"} · ${e.grade||""}`, `${e.qty||0} kg`, naira(hVal(e)), `Picked by ${e.pickedBy||"—"}${e.notes?" · "+e.notes:""}`],
+  activity:e=>[`${e.type||"Activity"}`, `${aDur(e)} h`, "", `${e.locations||""} · ${e.staff||""} · ${e.status||""}${e.desc?" — "+e.desc:""}`],
+  welfare:e=>[`${e.location||"?"} · ${e.pest||"Issue"}`, e.severity||"", "", `${e.crop||""} ${e.stage||""} · Vigor ${e.vigor||"—"} · ${e.action||"No action yet"}`],
+  inputs:e=>[`${e.product||"Product"} (${e.type||""})`, `PHI ${e.phi||0}d`, "", `${e.locations||""} · ${e.crop||""} · ${e.volume||"?"} L/kg · Safe from ${safeDate(currentDate,e.phi)}`],
+  losses:e=>[`${e.location||"?"} · ${e.cause||"Loss"}`, `${e.qty||0} kg`, naira(e.value), `${e.crop||""} · ${e.desc||""}`],
+  requisitions:e=>[`${e.item||"Item"}`, e.priority||"", naira(e.cost), `${e.type||""} · Qty ${e.qty||"?"} ${e.unit||""} · Needed by ${e.neededBy||"—"}`],
+  defects:e=>[`${e.type||"Issue"} · ${e.location||""}`, e.priority||"", "", `${e.desc||""} · ${e.status||"Open"}${e.assigned?" · "+e.assigned:""}`]
+};
+
+/* ================= Render entry lists ================= */
+function renderList(sec){
+  const el = $("list-"+sec);
+  if(!report[sec].length){ el.innerHTML = `<div class="empty">No entries yet for this day. Fill the form below and tap Add.</div>`; return; }
+  el.innerHTML = `<h3>Logged today — ${report[sec].length}</h3>` + report[sec].map((e,i)=>{
+    const [t, badge, val, sub] = TITLE[sec](e);
+    return `<div class="entry"><div class="e-top"><span class="e-title">${t}</span><span class="e-val num">${val||badge||""}</span></div>
+      <div class="e-sub">${sub}</div>
+      <div class="e-actions"><button class="e-edit" onclick="editEntry('${sec}',${i})">Edit</button>
+      <button class="e-del" onclick="delEntry('${sec}',${i})">Remove</button></div></div>`;
+  }).join("");
+}
+function renderAll(){ SECTIONS.forEach(renderList); refreshHeader(); }
+
+/* ================= Add / edit / delete ================= */
+function readForm(sec){
+  const o={}; FM[sec].f.forEach(f=>o[f]=$(fid(sec,f)).value.trim());
+  return o;
+}
+function clearForm(sec){ FM[sec].f.forEach(f=>{ const el=$(fid(sec,f)); if(el.tagName==="SELECT") el.selectedIndex=0; else el.value=""; }); 
+  if(sec==="harvest")$("h_value").innerHTML="<small>Value</small>₦0";
+  if(sec==="activity")$("a_dur").textContent="0 h";
+  if(sec==="inputs")$("i_safe").textContent="—";
+}
+SECTIONS.forEach(sec=>{
+  $("add-"+sec).addEventListener("click", ()=>{
+    const o = readForm(sec);
+    const hasContent = Object.values(o).some(v=>v!=="");
+    if(!hasContent){ toast("Nothing to add — fill the form first"); return; }
+    if(editing[sec]!=null){ report[sec][editing[sec]] = o; editing[sec]=null; $("add-"+sec).textContent="+ Add "+({harvest:"harvest entry",activity:"activity",welfare:"welfare entry",inputs:"input record",losses:"loss record",requisitions:"requisition",defects:"defect / issue"}[sec]); }
+    else report[sec].push(o);
+    clearForm(sec); renderAll(); saveDay(true);
+  });
+});
+window.editEntry = (sec,i)=>{
+  const e=report[sec][i]; FM[sec].f.forEach(f=>$(fid(sec,f)).value = e[f]||"");
+  editing[sec]=i; $("add-"+sec).textContent="✓ Update entry";
+  if(sec==="harvest")$("h_qty").dispatchEvent(new Event("input"));
+  if(sec==="activity")$("a_start").dispatchEvent(new Event("input"));
+  if(sec==="inputs")$("i_phi").dispatchEvent(new Event("input"));
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+window.delEntry = (sec,i)=>{ report[sec].splice(i,1); renderAll(); saveDay(true); };
+
+/* ================= Summary binding ================= */
+const SU = ["preparedBy","weather","status","tHigh","tLow","openIssues","wins","issues","tomorrow","reviewedBy"];
+SU.forEach(f=>{
+  $("su_"+f).addEventListener("input", ()=>{ report.summary[f]=$("su_"+f).value; markDirty(); });
+  $("su_"+f).addEventListener("change", ()=>{ report.summary[f]=$("su_"+f).value; saveDay(true); });
+});
+$("su_allNormal").querySelectorAll("button").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    report.summary.allNormal = b.dataset.v;
+    $("su_allNormal").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    saveDay(true);
+  });
+});
+function loadSummaryUI(){
+  SU.forEach(f=>$("su_"+f).value = report.summary[f] ?? "");
+  $("su_allNormal").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x.dataset.v===report.summary.allNormal));
+}
+
+/* ================= Persistence ================= */
+let saveTimer=null;
+function markDirty(){ dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(()=>saveDay(true), 1200); }
+async function saveDay(silent){
+  report.date = currentDate;
+  await store.set(key(currentDate), JSON.stringify(report));
+  dirty=false; $("saveDot").style.display="inline-block";
+  if(!silent) toast("Day saved");
+}
+async function loadDay(d){
+  currentDate=d;
+  const raw = await store.get(key(d));
+  report = raw ? Object.assign(blank(), JSON.parse(raw)) : blank();
+  SECTIONS.forEach(s=>{ if(!Array.isArray(report[s])) report[s]=[]; });
+  loadSummaryUI(); renderAll();
+  $("i_safe").textContent = safeDate(currentDate, $("i_phi").value);
+  $("saveDot").style.display = raw ? "inline-block" : "none";
+}
+$("reportDate").value = currentDate;
+$("reportDate").addEventListener("change", async e=>{ if(dirty) await saveDay(true); loadDay(e.target.value); });
+$("btnSave").addEventListener("click", ()=>saveDay(false));
+
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2200); }
+</script>
+<script>
+/* ================= PDF extraction ================= */
+const NGN = n => "NGN " + (Number(n)||0).toLocaleString("en-NG");
+function fmtDate(d){ return new Date(d+"T00:00:00").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"}); }
+
+$("btnPdf").addEventListener("click", async ()=>{
+  await saveDay(true);
+  if(!(window.jspdf && window.jspdf.jsPDF)){ printFallback(); return; }
+  try { await makePdf(); } catch(err){ console.error(err); printFallback(); }
+});
+
+async function makePdf(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:"mm", format:"a4"});
+  const t = totals(); const s = report.summary;
+  const GREEN=[30,86,49], ORANGE=[232,89,12], INK=[28,27,24], MUTE=[110,108,100], LINE=[227,225,216];
+  const W = doc.internal.pageSize.getWidth(), M = 14;
+  let y = 0;
+
+  // Header band
+  doc.setFillColor(...GREEN); doc.rect(0,0,W,30,"F");
+  doc.setTextColor(255,255,255);
+  doc.setFont("helvetica","bold"); doc.setFontSize(15);
+  doc.text("DOUVALUE FARMS", M, 13);
+  doc.setFontSize(9); doc.setFont("helvetica","normal");
+  doc.text("Daily Field Report  ·  Port Harcourt, Rivers State", M, 19);
+  doc.setFont("helvetica","bold"); doc.setFontSize(11);
+  doc.text(fmtDate(currentDate), W-M, 13, {align:"right"});
+  doc.setFontSize(8.5); doc.setFont("helvetica","normal");
+  doc.text("Prepared by: "+(s.preparedBy||"—")+(s.reviewedBy?("   ·   Reviewed by: "+s.reviewedBy):""), W-M, 19, {align:"right"});
+
+  // KPI strip
+  y = 38;
+  const kpis = [["HARVEST", t.kg+" kg"],["HARVEST VALUE", NGN(t.val)],["LABOUR", t.hrs+" hrs"],["STATUS", (s.status||"—").replace(/^\d\s-\s/,"")]];
+  const bw = (W-2*M-9)/4;
+  kpis.forEach((k,i)=>{
+    const x = M + i*(bw+3);
+    doc.setDrawColor(...LINE); doc.setFillColor(250,250,247);
+    doc.roundedRect(x,y-6,bw,14,1.5,1.5,"FD");
+    doc.setTextColor(...MUTE); doc.setFontSize(6.5); doc.setFont("helvetica","bold");
+    doc.text(k[0], x+3, y-1.5);
+    doc.setTextColor(...(i===1?ORANGE:INK)); doc.setFontSize(10);
+    doc.text(String(k[1]), x+3, y+4.5);
+  });
+  y += 15;
+
+  // Summary block
+  const sumRows = [];
+  sumRows.push(["Weather", (s.weather||"—") + (s.tHigh||s.tLow ? `  (${s.tHigh||"?"}°C / ${s.tLow||"?"}°C)`:"")]);
+  sumRows.push(["All zones normal", s.allNormal==="Y"?"Yes":(s.allNormal==="N"?"No — see Plant Welfare":"—")]);
+  sumRows.push(["Open issues at EOD", s.openIssues||"0"]);
+  if(s.wins) sumRows.push(["Key wins", s.wins]);
+  if(s.issues) sumRows.push(["Key issues / risks", s.issues]);
+  if(s.tomorrow) sumRows.push(["Tomorrow focus", s.tomorrow]);
+  y = sectionTable(doc, y, "DAILY SUMMARY", null, sumRows.map(r=>[{content:r[0],styles:{fontStyle:"bold",textColor:MUTE,cellWidth:42}}, r[1]]), GREEN, LINE, true);
+
+  const defs = [
+    ["harvest","HARVEST LOG", ["Location","Crop","Grade","Qty (kg)","Price","Value","Picked by"],
+      e=>[e.location,e.crop,e.grade,e.qty, NGN(e.price)+"/kg", NGN(hVal(e)), e.pickedBy],
+      ()=>[["TOTAL","","", String(t.kg),"", NGN(t.val),""]]],
+    ["activity","ACTIVITY LOG", ["Activity","Locations","Staff","Time","Hrs","Status","Notes"],
+      e=>[e.type, e.locations, e.staff, (e.start&&e.end? e.start+"–"+e.end:""), String(aDur(e)), e.status, [e.desc,e.notes].filter(Boolean).join(" · ")], null],
+    ["welfare","PLANT WELFARE", ["Location","Crop / stage","Vigor","Observed","Severity","Action taken","Follow-up"],
+      e=>[e.location, [e.crop,e.stage].filter(Boolean).join(" · "), e.vigor, e.pest, e.severity, e.action, e.followup], null],
+    ["inputs","INPUTS APPLIED", ["Product","Type","Rate","Locations","Vol","PHI","Safe from"],
+      e=>[e.product+(e.ai?"\n("+e.ai+")":""), e.type, e.rate, e.locations, e.volume, e.phi?e.phi+"d":"", safeDate(currentDate,e.phi)], null],
+    ["losses","LOSSES", ["Location","Crop","Cause","Qty","Value lost","Description","Action"],
+      e=>[e.location,e.crop,e.cause,e.qty, NGN(e.value), e.desc, e.action], null],
+    ["requisitions","REQUISITIONS", ["Item / service","Type","Qty","Priority","Needed by","Est. cost","Requested by"],
+      e=>[e.item, e.type, [e.qty,e.unit].filter(Boolean).join(" "), e.priority, e.neededBy, NGN(e.cost), e.requestedBy], null],
+    ["defects","DEFECTS & ISSUES", ["Type","Location","Description","Priority","Status","Action / assigned","Target"],
+      e=>[e.type, e.location, e.desc, e.priority, e.status, [e.action,e.assigned].filter(Boolean).join(" · "), e.target], null]
+  ];
+  for(const [sec,title,head,mapper,foot] of defs){
+    if(!report[sec].length) continue;
+    y = sectionTable(doc, y, title+"  ("+report[sec].length+")", head, report[sec].map(mapper), GREEN, LINE, false, foot?foot():null);
+  }
+
+  // Footer on every page
+  const pages = doc.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);
+    const H = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(...LINE); doc.line(M, H-12, W-M, H-12);
+    doc.setFontSize(7); doc.setTextColor(...MUTE); doc.setFont("helvetica","normal");
+    doc.text("DouValue Farms Ltd · Daily Field Report · "+currentDate, M, H-7);
+    doc.text("Generated "+new Date().toLocaleString("en-GB")+"  ·  Page "+p+" of "+pages, W-M, H-7, {align:"right"});
+  }
+
+  const fname = "DouValue_Daily_Report_"+currentDate+".pdf";
+  const blob = doc.output("blob");
+  // Try native share (WhatsApp / email) first on mobile
+  if(navigator.canShare && navigator.canShare({files:[new File([blob],fname,{type:"application/pdf"})]})){
+    try {
+      await navigator.share({files:[new File([blob],fname,{type:"application/pdf"})], title:"DouValue Daily Report "+currentDate});
+      toast("Report shared"); return;
+    } catch(e){ if(e.name==="AbortError") return; }
+  }
+  doc.save(fname);
+  toast("PDF downloaded");
+}
+
+function sectionTable(doc, y, title, head, body, GREEN, LINE, isSummary, foot){
+  const M=14;
+  if(y > doc.internal.pageSize.getHeight()-40){ doc.addPage(); y=18; }
+  doc.setFillColor(...GREEN); doc.rect(M, y, 2.2, 5, "F");
+  doc.setTextColor(...GREEN); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text(title, M+5, y+4);
+  y += 7;
+  doc.autoTable({
+    startY:y, margin:{left:M,right:M},
+    head: head?[head]:undefined,
+    body, foot: foot||undefined,
+    theme:"grid",
+    styles:{font:"helvetica", fontSize:8, cellPadding:2.2, lineColor:LINE, lineWidth:0.15, textColor:[28,27,24], valign:"top"},
+    headStyles:{fillColor:[241,246,240], textColor:GREEN, fontStyle:"bold", fontSize:7.5},
+    footStyles:{fillColor:[241,246,240], textColor:[28,27,24], fontStyle:"bold"},
+    alternateRowStyles:{fillColor:[252,252,250]}
+  });
+  return doc.lastAutoTable.finalY + 8;
+}
+
+/* ================= Print fallback (works fully offline, Save as PDF from print dialog) ================= */
+function printFallback(){
+  const t=totals(); const s=report.summary;
+  const esc = x => String(x??"").replace(/</g,"&lt;");
+  const tbl = (title, head, rows) => rows.length ? `<h2>${title} (${rows.length})</h2><table><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table>` : "";
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>DouValue Daily Report ${currentDate}</title><style>
+    body{font-family:Arial,Helvetica,sans-serif;color:#1C1B18;margin:24px;font-size:12px}
+    .band{background:#1E5631;color:#fff;padding:14px 16px;border-radius:6px;display:flex;justify-content:space-between;align-items:center}
+    .band h1{margin:0;font-size:16px;letter-spacing:.5px} .band .d{text-align:right;font-size:12px}
+    .kpis{display:flex;gap:8px;margin:12px 0} .kpis div{flex:1;border:1px solid #E3E1D8;border-radius:6px;padding:8px;background:#FAFAF7}
+    .kpis b{display:block;font-size:14px} .kpis span{font-size:9px;color:#6E6C64;text-transform:uppercase;letter-spacing:1px}
+    h2{color:#1E5631;font-size:12px;border-left:4px solid #E8590C;padding-left:8px;margin:18px 0 6px}
+    table{width:100%;border-collapse:collapse} th,td{border:1px solid #E3E1D8;padding:5px 6px;text-align:left;vertical-align:top}
+    th{background:#F1F6F0;color:#1E5631;font-size:10px} .foot{margin-top:20px;color:#6E6C64;font-size:10px;border-top:1px solid #E3E1D8;padding-top:6px}
+  </style></head><body>
+  <div class="band"><h1>DOUVALUE FARMS · Daily Field Report</h1><div class="d"><b>${fmtDate(currentDate)}</b><br>Prepared by ${esc(s.preparedBy||"—")}${s.reviewedBy?" · Reviewed by "+esc(s.reviewedBy):""}</div></div>
+  <div class="kpis"><div><b>${t.kg} kg</b><span>Harvest</span></div><div><b>${naira(t.val)}</b><span>Harvest value</span></div><div><b>${t.hrs} hrs</b><span>Labour</span></div><div><b>${esc(s.status||"—")}</b><span>Day status</span></div></div>
+  <h2>Daily Summary</h2><table>
+    <tr><th style="width:160px">Weather</th><td>${esc(s.weather||"—")} ${s.tHigh||s.tLow?`(${s.tHigh||"?"}°C / ${s.tLow||"?"}°C)`:""}</td></tr>
+    <tr><th>All zones normal</th><td>${s.allNormal==="Y"?"Yes":s.allNormal==="N"?"No — see Plant Welfare":"—"}</td></tr>
+    <tr><th>Open issues at EOD</th><td>${esc(s.openIssues||"0")}</td></tr>
+    ${s.wins?`<tr><th>Key wins</th><td>${esc(s.wins)}</td></tr>`:""}
+    ${s.issues?`<tr><th>Key issues / risks</th><td>${esc(s.issues)}</td></tr>`:""}
+    ${s.tomorrow?`<tr><th>Tomorrow focus</th><td>${esc(s.tomorrow)}</td></tr>`:""}
+  </table>
+  ${tbl("Harvest Log",["Location","Crop","Grade","Qty (kg)","Price","Value","Picked by"], report.harvest.map(e=>[e.location,e.crop,e.grade,e.qty,naira(e.price)+"/kg",naira(hVal(e)),e.pickedBy]))}
+  ${tbl("Activity Log",["Activity","Locations","Staff","Time","Hrs","Status","Notes"], report.activity.map(e=>[e.type,e.locations,e.staff,(e.start&&e.end?e.start+"–"+e.end:""),aDur(e),e.status,[e.desc,e.notes].filter(Boolean).join(" · ")]))}
+  ${tbl("Plant Welfare",["Location","Crop / stage","Vigor","Observed","Severity","Action","Follow-up"], report.welfare.map(e=>[e.location,[e.crop,e.stage].filter(Boolean).join(" · "),e.vigor,e.pest,e.severity,e.action,e.followup]))}
+  ${tbl("Inputs Applied",["Product","Type","Rate","Locations","Vol","PHI","Safe from"], report.inputs.map(e=>[e.product+(e.ai?" ("+e.ai+")":""),e.type,e.rate,e.locations,e.volume,e.phi?e.phi+"d":"",safeDate(currentDate,e.phi)]))}
+  ${tbl("Losses",["Location","Crop","Cause","Qty","Value lost","Description","Action"], report.losses.map(e=>[e.location,e.crop,e.cause,e.qty,naira(e.value),e.desc,e.action]))}
+  ${tbl("Requisitions",["Item","Type","Qty","Priority","Needed by","Est. cost","Requested by"], report.requisitions.map(e=>[e.item,e.type,[e.qty,e.unit].filter(Boolean).join(" "),e.priority,e.neededBy,naira(e.cost),e.requestedBy]))}
+  ${tbl("Defects & Issues",["Type","Location","Description","Priority","Status","Action / assigned","Target"], report.defects.map(e=>[e.type,e.location,e.desc,e.priority,e.status,[e.action,e.assigned].filter(Boolean).join(" · "),e.target]))}
+  <div class="foot">DouValue Farms Ltd · Port Harcourt, Rivers State · Generated ${new Date().toLocaleString("en-GB")}</div>
+  <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`;
+  const w = window.open("","_blank");
+  if(!w){ toast("Allow pop-ups to export the report"); return; }
+  w.document.write(html); w.document.close();
+  toast("Use Print → Save as PDF");
+}
+
+/* ================= Init ================= */
+loadDay(currentDate);
+</script>
+</body>
+</html>
