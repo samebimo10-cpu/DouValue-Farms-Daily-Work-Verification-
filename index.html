@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1E5631">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>DouValue Farms — Daily Report</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -14,11 +17,13 @@
   --radius:12px;
 }
 *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+[hidden]{display:none !important;}
 html{font-size:16px;}
 body{
   font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background:var(--paper); color:var(--ink); min-height:100vh; padding-bottom:96px;
 }
+body.noscroll{overflow:hidden;}
 .num{font-variant-numeric:tabular-nums;}
 
 /* ===== Top bar ===== */
@@ -32,15 +37,25 @@ body{
   background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); color:#fff;
   border-radius:8px; padding:8px 10px; font-size:.9rem; font-family:inherit; min-height:40px;
 }
+.iconbtn{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); color:#fff;
+  border-radius:8px; min-width:40px; min-height:40px; font-size:1.05rem; cursor:pointer; font-family:inherit;}
 .ledger{display:flex; gap:18px; padding:10px 2px 12px; align-items:baseline;}
 .ledger .stat{display:flex; flex-direction:column;}
 .ledger .v{font-size:1.15rem; font-weight:800;}
 .ledger .l{font-size:.62rem; letter-spacing:1.2px; text-transform:uppercase; opacity:.72;}
 .ledger .accent{color:#FFC49B;}
 
+/* sync bar */
+.syncbar{margin:0 -16px; padding:6px 16px; font-size:.74rem; font-weight:600; background:rgba(0,0,0,.18);
+  display:flex; align-items:center; gap:8px; cursor:pointer; border:none; width:calc(100% + 32px);
+  color:#fff; font-family:inherit; text-align:left;}
+.syncbar .dot{width:8px; height:8px; border-radius:50%; background:#8fd6a4; flex:0 0 auto;}
+.syncbar.wait .dot{background:#FFC49B;} .syncbar.err .dot{background:#ff8a7a;} .syncbar.off .dot{background:rgba(255,255,255,.4);}
+.syncbar .chev{margin-left:auto; opacity:.6;}
+
 /* ===== Section tabs (field tags) ===== */
 .tabs{display:flex; gap:8px; overflow-x:auto; padding:10px 16px; background:var(--paper);
-  position:sticky; top:104px; z-index:30; border-bottom:1px solid var(--line);
+  position:sticky; top:132px; z-index:30; border-bottom:1px solid var(--line);
   scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
 .tab{flex:0 0 auto; border:1.5px solid var(--line); background:var(--card); color:var(--ink);
@@ -60,7 +75,7 @@ main{padding:14px 14px 0; max-width:640px; margin:0 auto;}
 .field{margin-bottom:13px;}
 .field label{display:block; font-size:.72rem; font-weight:700; letter-spacing:.8px;
   text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
-input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=url],input[type=password],select,textarea{
   width:100%; border:1.5px solid var(--line); border-radius:9px; background:#FCFCFA;
   padding:11px 12px; font-size:1rem; font-family:inherit; color:var(--ink); min-height:46px;
   appearance:none; -webkit-appearance:none;}
@@ -87,11 +102,35 @@ input:focus,select:focus,textarea:focus{outline:none; border-color:var(--leaf); 
 .btn-add{background:var(--leaf); color:#fff;}
 .btn-add:active{background:var(--leaf-dark);}
 .btn-ghost{background:transparent; color:var(--bad); border:1.5px solid var(--line); min-height:42px; font-weight:700;}
+.btn-plain{background:transparent; color:var(--ink); border:1.5px solid var(--line); min-height:42px; font-weight:700;}
 .btn-save{background:var(--habanero); color:#fff;}
+
+/* staff name buttons */
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:7px;}
+.chip{border:1.5px solid var(--line); background:#FCFCFA; color:var(--ink); border-radius:999px;
+  padding:7px 12px; font-size:.82rem; font-weight:700; font-family:inherit; cursor:pointer; min-height:36px;}
+.chip.on{background:var(--leaf); border-color:var(--leaf); color:#fff;}
+
+/* photo / video strip */
+.mstrip-title{font-size:.72rem; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
+.mstrip{display:grid; grid-template-columns:repeat(auto-fill,minmax(98px,1fr)); gap:8px; margin:0 0 14px;}
+.mslot{position:relative; border:1.5px dashed var(--line); border-radius:10px; background:#FCFCFA; min-height:98px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  padding:8px 6px; font-family:inherit; font-size:.72rem; font-weight:700; color:var(--muted); cursor:pointer; overflow:hidden; line-height:1.25;}
+.mslot.req{border-color:#E9B48F; color:var(--ink);}
+.mslot .ico{font-size:1.35rem; margin-bottom:4px;}
+.mslot .tag{font-size:.6rem; letter-spacing:.7px; text-transform:uppercase; margin-top:5px; font-weight:800; color:var(--muted);}
+.mslot.req .tag{color:var(--habanero-dark);}
+.mslot.has{border-style:solid; border-color:var(--leaf); padding:0; background:#000;}
+.mslot.has img{width:100%; height:98px; object-fit:cover; display:block;}
+.mslot .cap{position:absolute; left:0; right:0; bottom:0; background:rgba(0,0,0,.6); color:#fff; font-size:.62rem; padding:3px 5px; text-align:left;}
+.mslot .x{position:absolute; top:4px; right:4px; width:28px; height:28px; border-radius:50%; border:none;
+  background:rgba(0,0,0,.6); color:#fff; font-weight:800; cursor:pointer; font-size:.8rem;}
+.mslot .play{position:absolute; top:38%; left:50%; transform:translate(-50%,-50%); color:#fff; font-size:1.5rem; text-shadow:0 1px 4px rgba(0,0,0,.7);}
 
 /* entry list */
 .entries{margin-bottom:14px;}
-.entries h3{font-size:.72rem; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin:2px 2px 8px;}
+.entries h3, .carry-h{font-size:.72rem; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin:2px 2px 8px;}
 .entry{background:var(--card); border:1px solid var(--line); border-left:4px solid var(--leaf);
   border-radius:10px; padding:12px 12px 10px; margin-bottom:8px;}
 .entry .e-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
@@ -103,8 +142,35 @@ input:focus,select:focus,textarea:focus{outline:none; border-color:var(--leaf); 
   font-weight:700; cursor:pointer; padding:4px 0;}
 .entry .e-edit{color:var(--leaf);}
 .entry .e-del{color:var(--bad);}
+.entry .e-media{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+.entry .e-media img{width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid var(--line); cursor:pointer; background:#eee;}
+.entry.resolved{border-left-color:var(--muted); opacity:.75;}
+.entry.carry{border-left-color:var(--habanero);}
+.entry.carry.done{border-left-color:var(--muted); opacity:.75;}
+.badge-ok{color:var(--good); font-weight:800;}
 .empty{border:1.5px dashed var(--line); border-radius:10px; padding:18px 14px; text-align:center;
   color:var(--muted); font-size:.86rem; margin-bottom:8px;}
+
+/* walk-round */
+.rounds{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;}
+.round{border:1.5px solid var(--line); background:var(--card); border-radius:10px; padding:10px 8px; text-align:left;
+  font-family:inherit; cursor:pointer; color:var(--ink); display:flex; flex-direction:column; gap:2px; min-height:74px;}
+.round b{font-size:.9rem;} .round span{font-size:.72rem; color:var(--muted); font-weight:600;}
+.round em{font-style:normal; font-size:.7rem; font-weight:700; color:var(--habanero-dark); line-height:1.3;}
+.round.on{border-color:var(--leaf); box-shadow:inset 0 0 0 1.5px var(--leaf);}
+.zone{background:var(--card); border:1px solid var(--line); border-left:4px solid var(--line); border-radius:10px; padding:12px; margin-bottom:8px;}
+.zone.done{border-left-color:var(--leaf);}
+.zone.problem{border-left-color:var(--bad);}
+.zone .z-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+.zone .z-name{font-weight:800;} .zone .z-state{font-size:.75rem; color:var(--muted); font-weight:700;}
+.zone .mstrip{grid-template-columns:1fr 1fr; margin-bottom:10px;}
+.z-status{display:grid; grid-template-columns:repeat(3,1fr); border:1.5px solid var(--line); border-radius:9px; overflow:hidden;}
+.z-status button{border:none; background:#FCFCFA; padding:11px 4px; font-size:.9rem; font-weight:800; font-family:inherit; color:var(--muted); cursor:pointer; min-height:44px;}
+.z-status button + button{border-left:1.5px solid var(--line);}
+.z-status button.ok{background:var(--good); color:#fff;}
+.z-status button.watch{background:var(--warn); color:#fff;}
+.z-status button.problem{background:var(--bad); color:#fff;}
+.wr-sum{font-weight:800; font-size:.95rem; margin-bottom:10px;}
 
 /* bottom action bar */
 .bottombar{position:fixed; left:0; right:0; bottom:0; z-index:50; background:#fff;
@@ -116,33 +182,72 @@ input:focus,select:focus,textarea:focus{outline:none; border-color:var(--leaf); 
 .btn-savebar{background:var(--leaf); color:#fff; flex:1;}
 
 .toast{position:fixed; bottom:84px; left:50%; transform:translateX(-50%); background:var(--ink);
-  color:#fff; padding:11px 18px; border-radius:999px; font-size:.86rem; font-weight:600; z-index:60;
-  opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap;}
+  color:#fff; padding:11px 18px; border-radius:18px; font-size:.86rem; font-weight:600; z-index:200;
+  opacity:0; transition:opacity .25s; pointer-events:none; max-width:92vw; text-align:center;}
 .toast.show{opacity:1;}
 .saved-dot{width:8px;height:8px;border-radius:50%;background:#8fd6a4;display:inline-block;margin-right:6px;vertical-align:1px;}
 h2.sect{font-size:1.05rem; font-weight:800; margin:4px 2px 10px; display:flex; align-items:center; gap:8px;}
 h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); border-radius:3px;}
-@media (max-width:380px){ .row3{grid-template-columns:1fr 1fr;} }
+
+/* bottom sheet */
+.sheet-bg{position:fixed; inset:0; background:rgba(20,20,16,.5); z-index:90; display:flex; align-items:flex-end; justify-content:center;}
+.sheet{background:var(--paper); width:100%; max-width:640px; max-height:88vh; overflow:auto; border-radius:16px 16px 0 0;
+  padding:18px 16px calc(18px + env(safe-area-inset-bottom));}
+.sheet h3{font-size:1.02rem; margin-bottom:10px;}
+.sheet .gap{height:8px;}
+.qitem{font-size:.8rem; padding:8px 0; border-bottom:1px solid var(--line);}
+.qitem b{display:block; font-size:.82rem; word-break:break-all;}
+.qitem .err{color:var(--bad);}
+.switchrow{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+.switchrow input{width:24px; height:24px;}
+
+/* in-app camera */
+.cam{position:fixed; inset:0; background:#000; z-index:120; display:flex; flex-direction:column; color:#fff;}
+.cam-top{display:flex; align-items:center; gap:10px; padding:10px 12px; font-size:.82rem;}
+.cam-top button{background:rgba(255,255,255,.15); border:none; color:#fff; width:40px; height:40px; border-radius:50%; font-size:1rem; cursor:pointer;}
+.cam-title{flex:1; font-weight:700; line-height:1.3;}
+.cam-gps{font-size:.72rem; opacity:.8; white-space:nowrap;}
+.cam-stage{flex:1; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+.cam-frame{position:relative;}
+.cam-frame video, .cam-frame img{position:absolute; inset:0; width:100%; height:100%; object-fit:fill;}
+.cam-frame img{opacity:.35; pointer-events:none;}
+.cam-timer{position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(176,51,30,.9); padding:4px 12px; border-radius:999px; font-weight:800; font-size:.85rem; display:none;}
+.cam-timer.on{display:block;}
+.cam-hint{position:absolute; bottom:10px; left:0; right:0; text-align:center; font-size:.75rem; opacity:.85; padding:0 12px;}
+.cam-bottom{display:flex; align-items:center; justify-content:center; gap:16px; padding:16px 16px calc(20px + env(safe-area-inset-bottom));}
+.shutter{width:74px; height:74px; border-radius:50%; border:5px solid #fff; background:rgba(255,255,255,.25); cursor:pointer;}
+.shutter.video{background:var(--bad);}
+.shutter.rec{background:var(--bad); border-radius:18px; width:64px; height:64px;}
+.cam-review{flex:1; display:flex; align-items:center; justify-content:center; padding:10px; overflow:hidden;}
+.cam-review img, .cam-review video{max-width:100%; max-height:100%; border-radius:6px;}
+.cam-msg{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; gap:16px; font-size:.95rem; line-height:1.5;}
+.cam-btn{border:none; border-radius:10px; padding:14px 20px; font-family:inherit; font-weight:800; font-size:.95rem; cursor:pointer; min-width:120px;}
+.cam-btn.use{background:var(--leaf); color:#fff;} .cam-btn.again{background:rgba(255,255,255,.15); color:#fff;}
+
+.banner{background:#FFF4E5; border:1px solid #F3C99B; color:#7A3E06; border-radius:10px; padding:12px; font-size:.84rem; line-height:1.45; margin-bottom:10px;}
+@media (max-width:380px){ .row3{grid-template-columns:1fr 1fr;} .rounds{gap:5px;} .round{padding:8px 6px;} }
 @media print{ body *{display:none;} }
 </style>
 </head>
 <body>
 
-<div class="topbar">
+<div class="topbar" id="topbar">
   <div class="brandrow">
     <div class="brand">DouValue Farms<small>Daily Field Report</small></div>
-    <div class="daypick"><input type="date" id="reportDate"></div>
+    <div class="daypick"><input type="date" id="reportDate"><button class="iconbtn" id="btnSettings" aria-label="Settings">⚙</button></div>
   </div>
   <div class="ledger">
     <div class="stat"><span class="v num" id="ledKg">0 kg</span><span class="l">Harvest today</span></div>
     <div class="stat"><span class="v num accent" id="ledVal">₦0</span><span class="l">Harvest value</span></div>
-    <div class="stat"><span class="v num" id="ledHrs">0 hrs</span><span class="l">Labour</span></div>
+    <div class="stat"><span class="v num" id="ledHrs">0 hrs</span><span class="l">Activity hours</span></div>
     <div class="stat"><span class="v num" id="ledIssues">0</span><span class="l">Flags</span></div>
   </div>
+  <button class="syncbar off" id="syncBar" type="button"><span class="dot"></span><span id="syncText">Uploads not set up</span><span class="chev">›</span></button>
 </div>
 
 <div class="tabs" id="tabs">
   <button class="tab active" data-s="summary">Summary<span class="cnt" id="c-summary"></span></button>
+  <button class="tab" data-s="walkround">Walk-round<span class="cnt" id="c-walkround"></span></button>
   <button class="tab" data-s="harvest">Harvest<span class="cnt" id="c-harvest"></span></button>
   <button class="tab" data-s="activity">Activities<span class="cnt" id="c-activity"></span></button>
   <button class="tab" data-s="welfare">Plant Welfare<span class="cnt" id="c-welfare"></span></button>
@@ -157,7 +262,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
   <section id="s-summary">
     <h2 class="sect">Daily Summary</h2>
     <div class="card">
-      <div class="sect-note">One entry per day — the north star. Harvest kg and labour hours fill in automatically from the other tabs.</div>
+      <div class="sect-note">One entry per day — the north star. Harvest kg and activity hours fill in automatically from the other tabs.</div>
       <div class="field"><label>Prepared by</label><select id="su_preparedBy"></select></div>
       <div class="row2">
         <div class="field"><label>Weather</label><select id="su_weather"></select></div>
@@ -175,7 +280,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
       </div>
       <div class="row3">
         <div class="field"><label>Harvest (kg)</label><div class="calc num" id="su_calcKg">0</div></div>
-        <div class="field"><label>Labour (hrs)</label><div class="calc num" id="su_calcHrs">0</div></div>
+        <div class="field"><label>Activity hours</label><div class="calc num" id="su_calcHrs">0</div></div>
         <div class="field"><label>Open issues EOD</label><input type="number" id="su_openIssues" inputmode="numeric" value="0"></div>
       </div>
       <div class="field"><label>Key wins</label><textarea id="su_wins" placeholder="What went well today"></textarea></div>
@@ -183,6 +288,14 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
       <div class="field"><label>Tomorrow focus</label><textarea id="su_tomorrow" placeholder="Plan for tomorrow"></textarea></div>
       <div class="field"><label>Reviewed by</label><input type="text" id="su_reviewedBy" placeholder="e.g. Gi"></div>
     </div>
+  </section>
+
+  <!-- WALK-ROUND -->
+  <section id="s-walkround" hidden>
+    <h2 class="sect">Walk-round</h2>
+    <div class="sect-note">Three rounds a day. At each zone, stand at its photo post and take the photo, record a slow pan along the rows, then tap one word.</div>
+    <div class="rounds" id="wrRounds"></div>
+    <div id="wrBody"></div>
   </section>
 
   <!-- HARVEST -->
@@ -202,6 +315,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
       <div class="field"><div class="calc num" id="h_value"><small>Value</small>₦0</div></div>
       <div class="field"><label>Picked by</label><input type="text" id="h_pickedBy" placeholder="Names, comma separated"></div>
       <div class="field"><label>Notes</label><input type="text" id="h_notes"></div>
+      <div class="mstrip-title">Photos</div><div class="mstrip" id="ms-harvest"></div>
       <button class="btn btn-add" id="add-harvest">+ Add harvest entry</button>
     </div>
   </section>
@@ -215,7 +329,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
       <div class="field"><label>Activity type</label><select id="a_type"></select></div>
       <div class="field"><label>Locations covered</label><input type="text" id="a_locations" placeholder="e.g. GH-01, GH-02, OF-03"></div>
       <div class="field"><label>Description</label><input type="text" id="a_desc"></div>
-      <div class="field"><label>Staff</label><input type="text" id="a_staff" placeholder="Names, comma separated"></div>
+      <div class="field"><label>Staff</label><div class="chips" id="a_staffChips"></div><input type="text" id="a_staff" placeholder="Names, comma separated"></div>
       <div class="row3">
         <div class="field"><label>Start</label><input type="time" id="a_start"></div>
         <div class="field"><label>End</label><input type="time" id="a_end"></div>
@@ -223,6 +337,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
       </div>
       <div class="field"><label>Status</label><select id="a_status"></select></div>
       <div class="field"><label>Notes</label><input type="text" id="a_notes"></div>
+      <div class="mstrip-title">Photos &amp; video</div><div class="mstrip" id="ms-activity"></div>
       <button class="btn btn-add" id="add-activity">+ Add activity</button>
     </div>
   </section>
@@ -230,6 +345,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
   <!-- WELFARE -->
   <section id="s-welfare" hidden>
     <h2 class="sect">Plant Welfare</h2>
+    <div id="carried"></div>
     <div class="entries" id="list-welfare"></div>
     <div class="card">
       <div class="sect-note">Only log zones with something OFF. If everything is normal, tick "All zones normal" on the Summary tab instead.</div>
@@ -246,6 +362,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
       <div class="field"><label>Action taken</label><input type="text" id="w_action"></div>
       <div class="field"><label>Follow-up by</label><input type="date" id="w_followup"></div>
       <div class="field"><label>Notes</label><input type="text" id="w_notes"></div>
+      <div class="mstrip-title">Photos &amp; video</div><div class="mstrip" id="ms-welfare"></div>
       <button class="btn btn-add" id="add-welfare">+ Add welfare entry</button>
     </div>
   </section>
@@ -273,6 +390,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
       </div>
       <div class="field"><label>Applied by</label><input type="text" id="i_appliedBy"></div>
       <div class="field"><label>Notes</label><input type="text" id="i_notes"></div>
+      <div class="mstrip-title">Photos</div><div class="mstrip" id="ms-inputs"></div>
       <button class="btn btn-add" id="add-inputs">+ Add input record</button>
     </div>
   </section>
@@ -294,6 +412,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
       <div class="field"><label>Reported by</label><select id="l_reportedBy"></select></div>
       <div class="field"><label>Description</label><input type="text" id="l_desc"></div>
       <div class="field"><label>Action taken</label><input type="text" id="l_action"></div>
+      <div class="mstrip-title">Photos</div><div class="mstrip" id="ms-losses"></div>
       <button class="btn btn-add" id="add-losses">+ Add loss record</button>
     </div>
   </section>
@@ -319,6 +438,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
         <div class="field"><label>Needed by</label><input type="date" id="r_neededBy"></div>
       </div>
       <div class="field"><label>Est. cost (₦)</label><input type="number" id="r_cost" inputmode="numeric"></div>
+      <div class="mstrip-title">Photo</div><div class="mstrip" id="ms-requisitions"></div>
       <button class="btn btn-add" id="add-requisitions">+ Add requisition</button>
     </div>
   </section>
@@ -346,6 +466,7 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
         <div class="field"><label>Target close</label><input type="date" id="d_target"></div>
       </div>
       <div class="field"><label>Cost estimate (₦)</label><input type="number" id="d_cost" inputmode="numeric"></div>
+      <div class="mstrip-title">Photo &amp; video</div><div class="mstrip" id="ms-defects"></div>
       <button class="btn btn-add" id="add-defects">+ Add defect / issue</button>
     </div>
   </section>
@@ -356,10 +477,30 @@ h2.sect::before{content:""; width:5px; height:18px; background:var(--habanero); 
   <button class="btn btn-pdf" id="btnPdf">Extract PDF ↧</button>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- bottom sheet (settings, upload list, problem chooser, media viewer) -->
+<div class="sheet-bg" id="sheetBg" hidden><div class="sheet" id="sheet"></div></div>
+
+<!-- in-app camera -->
+<div class="cam" id="cam" hidden>
+  <div class="cam-top"><button id="camClose" aria-label="Close camera">✕</button><div class="cam-title" id="camTitle"></div><div class="cam-gps" id="camGps"></div></div>
+  <div class="cam-stage" id="camStage">
+    <div class="cam-frame" id="camFrame"><video id="camVideo" playsinline muted autoplay></video><img id="camGhost" alt=""></div>
+    <div class="cam-timer" id="camTimer">0:00</div>
+    <div class="cam-hint" id="camHint"></div>
+  </div>
+  <div class="cam-review" id="camReview" hidden></div>
+  <div class="cam-msg" id="camMsg" hidden></div>
+  <div class="cam-bottom" id="camBottom"><button class="shutter" id="camShot" aria-label="Take"></button></div>
+</div>
+<!-- fallback when the live camera can't open: phone camera only (capture=environment), never the gallery -->
+<input type="file" id="fbPhoto" accept="image/*" capture="environment" hidden>
+<input type="file" id="fbVideo" accept="video/*" capture="environment" hidden>
+
 <script>
 /* ================= Reference lists (from Daily Report v2 workbook) ================= */
 const L = {
-  locations:["GH-01","GH-02","GH-03","GH-04","GH-05","OF-01","OF-02","OF-03","Nursery","Store","Office","Water System","Piggery","Whole Farm"],
+  locations:["GH-01","GH-02","GH-03","GH-04","GH-05","OF-01","OF-02","OF-03","Nursery","Store","Office","Water System","Gate & Perimeter","Piggery","Whole Farm"],
   crops:["Bell Pepper","Habanero Pepper","Chili Pepper","Tomato","Cucumber","Leafy Greens","Mixed","N/A"],
   stage:["Nursery","Transplanted","Vegetative","Flowering","Fruiting","Harvesting","End-of-cycle"],
   weather:["Sunny","Partly Cloudy","Cloudy","Light Rain","Heavy Rain","Storm","Harmattan/Dry","Hot/Humid"],
@@ -371,14 +512,35 @@ const L = {
   lossCause:["Pest damage","Disease","Weather/heat","Over-ripe","Mechanical damage","Theft","Animal intrusion","Operator error","End of cycle","Other"],
   reqType:["Inputs/Agrochemicals","Seeds/Seedlings","Tools/Equipment","Maintenance/Repairs","Logistics/Transport","Cash Advance","Office Supplies","Other"],
   defectType:["Infrastructure","Irrigation","Equipment/Tools","Greenhouse Cover/Net","Pest/Disease outbreak","Security","HR/Personnel","Utilities (Power/Water)","Other"],
-  staff:["Onyinyechi","Godstime","Tossy","Elijah","External Contractor","Other"],
+  staff:[],
   vigor:["1 - Failing","2 - Poor","3 - Average","4 - Good","5 - Excellent"],
   overall:["1 - Critical day","2 - Significant issues","3 - Normal day","4 - Productive day","5 - Excellent day"],
   inputType:["Foliar Spray","Soil Drench","Fertigation","Granular/Broadcast","Seed Treatment","Other"]
 };
 const SECTIONS = ["harvest","activity","welfare","inputs","losses","requisitions","defects"];
+const TABS = ["summary","walkround",...SECTIONS];
 const $ = id => document.getElementById(id);
 const naira = n => "₦" + (Number(n)||0).toLocaleString("en-NG");
+const esc = x => String(x ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const pad = n => String(n).padStart(2,"0");
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const csvList = s => String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+
+/* ================= Settings (kept on this phone) ================= */
+const SETTINGS_KEY = "dvf-settings";
+const DEFAULT_STAFF = "Onyinyechi, Holi, Prosper, John, Felix, Wisdom";
+const DEFAULTS = {uploadUrl:"", farmKey:"", wifiOnly:false, mediaRule:"auto", firstUse:"", videoQuality:"480", activePlots:"OF-03", staff:DEFAULT_STAFF};
+function readSettings(){ let s={}; try{ s = JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}") || {}; }catch(e){} return Object.assign({}, DEFAULTS, s); }
+function writeSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(S)); }catch(e){} }
+let S = readSettings();
+if(!S.firstUse){ S.firstUse = todayISO(); writeSettings(); }
+function staffList(){ return [...csvList(S.staff).filter(n=>!/^(external contractor|other)$/i.test(n)), "External Contractor", "Other"]; }
+function activePlots(){ const p = csvList(S.activePlots); return p.length ? p : ["OF-03"]; }
+function addDays(iso, n){ const d=new Date(iso+"T00:00:00"); d.setDate(d.getDate()+n); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function daysBetween(a,b){ return Math.round((new Date(b+"T00:00:00") - new Date(a+"T00:00:00"))/86400000); }
+// Rollout: practice days only remind; once live, required media blocks Add.
+function mediaRequired(){ if(S.mediaRule==="live") return true; if(S.mediaRule==="practice") return false; return daysBetween(S.firstUse, todayISO()) >= 3; }
+L.staff = staffList();
 
 /* ================= Storage adapter: artifact storage → localStorage → memory ================= */
 const mem = {};
@@ -393,6 +555,55 @@ const store = {
   }
 };
 
+/* ================= Media store (IndexedDB: photos & videos stay on the phone) ================= */
+const DB = (()=>{
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res,rej)=>{
+    const r = indexedDB.open("dvf-media", 1);
+    r.onupgradeneeded = () => { const db=r.result;
+      db.createObjectStore("meta",{keyPath:"id"}).createIndex("date","date");
+      db.createObjectStore("blobs",{keyPath:"id"}); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const req = r => new Promise((res,rej)=>{ r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+  const done = t => new Promise((res,rej)=>{ t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); });
+  return {
+    async add(meta, blobs){ const db=await open(); const t=db.transaction(["meta","blobs"],"readwrite");
+      t.objectStore("meta").put(meta); t.objectStore("blobs").put(Object.assign({id:meta.id}, blobs)); return done(t); },
+    async putMeta(meta){ const db=await open(); const t=db.transaction("meta","readwrite"); t.objectStore("meta").put(meta); return done(t); },
+    async meta(id){ const db=await open(); return req(db.transaction("meta").objectStore("meta").get(id)); },
+    async blobs(id){ const db=await open(); return req(db.transaction("blobs").objectStore("blobs").get(id)); },
+    async byDate(d){ const db=await open(); return req(db.transaction("meta").objectStore("meta").index("date").getAll(d)); },
+    async all(){ const db=await open(); return req(db.transaction("meta").objectStore("meta").getAll()); },
+    async del(id){ const db=await open(); const t=db.transaction(["meta","blobs"],"readwrite");
+      t.objectStore("meta").delete(id); t.objectStore("blobs").delete(id); return done(t); }
+  };
+})();
+const thumbUrls = {};
+async function thumbUrl(id){
+  if(thumbUrls[id]) return thumbUrls[id];
+  const b = await DB.blobs(id).catch(()=>null); if(!b) return null;
+  return thumbUrls[id] = URL.createObjectURL(b.thumb || b.blob);
+}
+async function storeMedia(res, info){
+  const id = currentDate + "_" + uid();
+  const meta = Object.assign({id, date:currentDate, kind:res.kind, mime:res.mime, size:res.blob.size, capturedAt:res.capturedAt,
+    gps:res.gps||null, duration:res.duration||null, uploaded:false, attempts:0, attached:false, createdAt:new Date().toISOString()}, info);
+  await DB.add(meta, {blob:res.blob, thumb:res.thumb||null});
+  Sync.kickSoon();
+  return id;
+}
+// Walk-round media can also sit on a Welfare/Defect entry, so it is only deleted from the Walk-round tab.
+async function dropMedia(id){
+  if(!id) return; const m = await DB.meta(id); if(!m || m.section==="walkround") return;
+  await DB.del(id); if(thumbUrls[id]){ URL.revokeObjectURL(thumbUrls[id]); delete thumbUrls[id]; }
+}
+function stampText(m){
+  const t = m.capturedAt ? new Date(m.capturedAt).toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) : "";
+  const g = m.gps ? `GPS ${m.gps.lat.toFixed(5)}, ${m.gps.lng.toFixed(5)} ±${m.gps.acc} m` : "no GPS fix";
+  return [t, m.zone, g].filter(Boolean).join(" · ");
+}
+
 /* ================= State ================= */
 let report = blank();
 let currentDate = todayISO();
@@ -403,33 +614,38 @@ function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.get
 function blank(){
   return { summary:{preparedBy:"Onyinyechi",weather:"",status:"3 - Normal day",tHigh:"",tLow:"",allNormal:"",
     openIssues:"0",wins:"",issues:"",tomorrow:"",reviewedBy:""},
-    harvest:[],activity:[],welfare:[],inputs:[],losses:[],requisitions:[],defects:[] };
+    harvest:[],activity:[],welfare:[],inputs:[],losses:[],requisitions:[],defects:[],
+    walkround:{}, carried:[], pdfs:[] };
 }
 const key = d => "dvf-report-" + d;
 
 /* ================= Populate dropdowns ================= */
 function fill(id, arr, blankFirst=true){
-  const s=$(id); s.innerHTML = (blankFirst?'<option value="">— select —</option>':"") + arr.map(v=>`<option>${v}</option>`).join("");
+  const s=$(id), keep=s.value;
+  s.innerHTML = (blankFirst?'<option value="">— select —</option>':"") + arr.map(v=>`<option>${esc(v)}</option>`).join("");
+  if(keep && arr.includes(keep)) s.value = keep;
 }
-fill("su_preparedBy",L.staff,false); fill("su_weather",L.weather); fill("su_status",L.overall,false);
+function fillStaff(){ ["su_preparedBy","l_reportedBy","r_requestedBy","d_reportedBy"].forEach((id,i)=>fill(id, L.staff, i!==0)); }
+fillStaff(); fill("su_weather",L.weather); fill("su_status",L.overall,false);
 fill("h_location",L.locations); fill("h_crop",L.crops); fill("h_grade",L.grade);
 fill("a_type",L.activityType); fill("a_status",L.status);
 fill("w_location",L.locations); fill("w_crop",L.crops); fill("w_stage",L.stage); fill("w_vigor",L.vigor); fill("w_severity",L.severity);
 fill("i_type",L.inputType); fill("i_crop",L.crops);
-fill("l_location",L.locations); fill("l_crop",L.crops); fill("l_cause",L.lossCause); fill("l_reportedBy",L.staff);
-fill("r_requestedBy",L.staff); fill("r_type",L.reqType); fill("r_location",L.locations); fill("r_priority",L.priority);
-fill("d_reportedBy",L.staff); fill("d_location",L.locations); fill("d_type",L.defectType); fill("d_priority",L.priority); fill("d_status",L.status);
+fill("l_location",L.locations); fill("l_crop",L.crops); fill("l_cause",L.lossCause);
+fill("r_type",L.reqType); fill("r_location",L.locations); fill("r_priority",L.priority);
+fill("d_location",L.locations); fill("d_type",L.defectType); fill("d_priority",L.priority); fill("d_status",L.status);
 $("su_status").value = "3 - Normal day";
 
 /* ================= Tabs ================= */
-document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click", ()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    t.classList.add("active");
-    ["summary",...SECTIONS].forEach(s=>$("s-"+s).hidden = (s!==t.dataset.s));
-    window.scrollTo({top:0});
-  });
-});
+function showTab(s){
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active", x.dataset.s===s));
+  TABS.forEach(k=>$("s-"+k).hidden = (k!==s));
+  if(s==="walkround") renderWalk();
+  window.scrollTo({top:0});
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click", ()=>showTab(t.dataset.s)));
+function placeTabs(){ $("tabs").style.top = $("topbar").offsetHeight + "px"; }
+window.addEventListener("resize", placeTabs);
 
 /* ================= Field maps ================= */
 const FM = {
@@ -441,11 +657,37 @@ const FM = {
   requisitions:{p:"r_",f:["requestedBy","type","item","qty","unit","location","reason","priority","neededBy","cost"]},
   defects:{p:"d_",f:["reportedBy","location","type","desc","impact","priority","status","action","assigned","target","cost"]}
 };
-const idMap = {harvest:{desc:null}, activity:{}}; // ids match field names with prefixes; special ids below
-function fid(sec, f){
-  const map = {activity:{desc:"a_desc"}, losses:{desc:"l_desc"}, defects:{desc:"d_desc"}};
-  return FM[sec].p + f;
-}
+function fid(sec, f){ return FM[sec].p + f; }
+const ADD_LABEL = {harvest:"+ Add harvest entry",activity:"+ Add activity",welfare:"+ Add welfare entry",inputs:"+ Add input record",losses:"+ Add loss record",requisitions:"+ Add requisition",defects:"+ Add defect / issue"};
+const SECNAME = {harvest:"Harvest",activity:"Activity",welfare:"Plant Welfare",inputs:"Inputs",losses:"Losses",requisitions:"Requisition",defects:"Defect"};
+const FILESEC = {harvest:"Harvest",activity:"Activity",welfare:"Welfare",inputs:"Inputs",losses:"Loss",requisitions:"Requisition",defects:"Defect"};
+const ZONE_FIELD = {harvest:"location",activity:"locations",welfare:"location",inputs:"locations",losses:"location",requisitions:"location",defects:"location"};
+const entryZone = (sec, e) => e[ZONE_FIELD[sec]] || "";
+const SHORT = {harvest:e=>[e.crop,e.location], activity:e=>[e.type,e.locations], welfare:e=>[e.pest||"Issue",e.location],
+  inputs:e=>[e.product,e.locations], losses:e=>[e.cause,e.location], requisitions:e=>[e.item], defects:e=>[e.type,e.location]};
+const shortLabel = (sec, e) => SHORT[sec](e).filter(Boolean).join(", ");
+
+/* ================= Media required on each entry (spec: "Media on existing entries") ================= */
+const BEFORE_TYPES = ["Trellising","Pruning","Weeding","Transplanting"];
+const MEDIA = {
+  harvest:[{role:"scale",label:"Crates on the scale, reading visible",kind:"photo",req:true},
+           {role:"graded",label:"Graded produce",kind:"photo"}],
+  activity:[{role:"before",label:"Before",kind:"photo",req:o=>BEFORE_TYPES.includes(o.type),note:"Required for trellising, pruning, weeding, transplanting"},
+            {role:"after",label:"After",kind:"photo",req:true},
+            {role:"clip",label:"Clip of the work",kind:"video",max:10}],
+  welfare:[{role:"closeup",label:"Close-up of the symptom",kind:"photo",req:true},
+           {role:"wide",label:"Wide shot of the affected area",kind:"photo",req:true},
+           {role:"video",label:"Video of the affected plants",kind:"video",req:true,min:10,max:15}],
+  inputs:[{role:"label",label:"Product label",kind:"photo",req:true},
+          {role:"application",label:"Application in the zone",kind:"photo",req:true},
+          {role:"measure",label:"Measuring cup at the mixing rate",kind:"photo"}],
+  losses:[{role:"scale",label:"Lost produce on the scale",kind:"photo",req:true}],
+  requisitions:[{role:"item",label:"The item, or current stock level",kind:"photo"}],
+  defects:[{role:"defect",label:"The defect",kind:"photo",req:true},
+           {role:"video",label:"Short video",kind:"video"}]
+};
+const roleLabel = (sec, role) => (MEDIA[sec]||[]).find(s=>s.role===role)?.label || role;
+let pending = {}; SECTIONS.forEach(s=>pending[s]={});
 
 /* ================= Derived calcs ================= */
 function hVal(e){ return (Number(e.qty)||0)*(Number(e.price)||0); }
@@ -455,25 +697,30 @@ function aDur(e){
   let m=(eh*60+em)-(sh*60+sm); if(m<0)m+=1440; return Math.round(m/60*10)/10;
 }
 function staffCount(s){ return s? s.split(",").map(x=>x.trim()).filter(Boolean).length : 1; }
+// Activity hours = duration × staff on that activity. A person on two overlapping jobs counts twice by design:
+// this is activity time, not hours paid.
 function aHours(e){ return aDur(e)*Math.max(1,staffCount(e.staff)); }
 function safeDate(dateISO, phi){
   if(phi===""||phi==null||isNaN(Number(phi))) return "—";
   const d=new Date(dateISO+"T00:00:00"); d.setDate(d.getDate()+Number(phi));
   return d.toISOString().slice(0,10);
 }
-function totals(){
-  const kg = report.harvest.reduce((s,e)=>s+(Number(e.qty)||0),0);
-  const val = report.harvest.reduce((s,e)=>s+hVal(e),0);
-  const hrs = report.activity.reduce((s,e)=>s+aHours(e),0);
-  const flags = report.welfare.length + report.defects.length + report.losses.length;
+function totalsOf(r){
+  const kg = r.harvest.reduce((s,e)=>s+(Number(e.qty)||0),0);
+  const val = r.harvest.reduce((s,e)=>s+hVal(e),0);
+  const hrs = r.activity.reduce((s,e)=>s+aHours(e),0);
+  const flags = r.welfare.length + r.defects.length + r.losses.length;
   return {kg:Math.round(kg*10)/10, val, hrs:Math.round(hrs*10)/10, flags};
 }
+function totals(){ return totalsOf(report); }
 function refreshHeader(){
   const t=totals();
   $("ledKg").textContent = t.kg+" kg"; $("ledVal").textContent = naira(t.val);
   $("ledHrs").textContent = t.hrs+" hrs"; $("ledIssues").textContent = t.flags;
   $("su_calcKg").textContent = t.kg; $("su_calcHrs").textContent = t.hrs;
   SECTIONS.forEach(s=>{ const c=$("c-"+s); c.textContent=report[s].length; c.classList.toggle("show",report[s].length>0); });
+  const wz = ROUNDS.reduce((n,r)=>n+zonesOf(r.k).filter(z=>zoneDone(r.k,z)).length,0);
+  $("c-walkround").textContent = wz; $("c-walkround").classList.toggle("show", wz>0);
 }
 
 /* live calc previews */
@@ -484,6 +731,21 @@ function refreshHeader(){
   $("a_dur").textContent = aDur({start:$("a_start").value,end:$("a_end").value})+" h";
 }));
 $("i_phi").addEventListener("input",()=>{ $("i_safe").textContent = safeDate(currentDate, $("i_phi").value); });
+$("a_type").addEventListener("change",()=>renderStrip("activity"));
+
+/* ================= Tap-to-add staff names ================= */
+function renderStaffChips(){
+  $("a_staffChips").innerHTML = L.staff.map(n=>`<button type="button" class="chip" data-n="${esc(n)}">${esc(n)}</button>`).join("");
+  syncChips();
+}
+function syncChips(){ const cur=csvList($("a_staff").value); document.querySelectorAll("#a_staffChips .chip").forEach(c=>c.classList.toggle("on", cur.includes(c.dataset.n))); }
+$("a_staffChips").addEventListener("click", e=>{
+  const b=e.target.closest(".chip"); if(!b) return;
+  const cur=csvList($("a_staff").value), i=cur.indexOf(b.dataset.n);
+  if(i>=0) cur.splice(i,1); else cur.push(b.dataset.n);
+  $("a_staff").value = cur.join(", "); syncChips();
+});
+$("a_staff").addEventListener("input", syncChips);
 
 /* ================= Entry titles for cards & PDF ================= */
 const TITLE = {
@@ -497,48 +759,166 @@ const TITLE = {
 };
 
 /* ================= Render entry lists ================= */
+function mediaThumbs(media){
+  const ids = Object.values(media||{}).filter(Boolean);
+  return ids.length ? `<div class="e-media">${ids.map(id=>`<img data-mid="${esc(id)}" alt="" onclick="viewMedia('${esc(id)}')">`).join("")}</div>` : "";
+}
+function hydrateThumbs(root){
+  root.querySelectorAll("img[data-mid]").forEach(async img=>{ const u=await thumbUrl(img.dataset.mid); if(u) img.src=u; else img.remove(); });
+}
 function renderList(sec){
   const el = $("list-"+sec);
   if(!report[sec].length){ el.innerHTML = `<div class="empty">No entries yet for this day. Fill the form below and tap Add.</div>`; return; }
   el.innerHTML = `<h3>Logged today — ${report[sec].length}</h3>` + report[sec].map((e,i)=>{
     const [t, badge, val, sub] = TITLE[sec](e);
-    return `<div class="entry"><div class="e-top"><span class="e-title">${t}</span><span class="e-val num">${val||badge||""}</span></div>
-      <div class="e-sub">${sub}</div>
+    const resolve = sec==="welfare" ? `<button class="e-edit" onclick="toggleResolved(${i})">${e.resolved?"Reopen issue":"Mark resolved"}</button>` : "";
+    return `<div class="entry${e.resolved?" resolved":""}"><div class="e-top"><span class="e-title">${t}</span><span class="e-val num">${val||badge||""}</span></div>
+      <div class="e-sub">${sub}${e.resolved?' · <span class="badge-ok">Resolved</span>':""}</div>
+      ${mediaThumbs(e.media)}
       <div class="e-actions"><button class="e-edit" onclick="editEntry('${sec}',${i})">Edit</button>
-      <button class="e-del" onclick="delEntry('${sec}',${i})">Remove</button></div></div>`;
+      <button class="e-del" onclick="delEntry('${sec}',${i})">Remove</button>${resolve}</div></div>`;
   }).join("");
+  hydrateThumbs(el);
 }
-function renderAll(){ SECTIONS.forEach(renderList); refreshHeader(); }
+function renderAll(){ SECTIONS.forEach(renderList); SECTIONS.forEach(renderStrip); renderCarried(); refreshHeader(); if(!$("s-walkround").hidden) renderWalk(); }
+
+/* ================= Photo/video strip above each Add button ================= */
+function slotsFor(sec){
+  const o = sec==="activity" ? {type:$("a_type").value} : {};
+  return MEDIA[sec].map(s=>Object.assign({}, s, {required: typeof s.req==="function" ? s.req(o) : !!s.req}));
+}
+function missingMedia(sec){ return slotsFor(sec).filter(s=>s.required && !pending[sec][s.role]).map(s=>s.label); }
+function slotHtml(id, label, kind, onTake, onRemove, required, extra){
+  if(id) return `<div class="mslot has" onclick="viewMedia('${esc(id)}')"><img data-mid="${esc(id)}" alt="">${kind==="video"?'<span class="play">▶</span>':""}<span class="cap">${esc(label)}</span>${onRemove?`<button class="x" aria-label="Retake" onclick="event.stopPropagation();${onRemove}">✕</button>`:""}</div>`;
+  return `<button type="button" class="mslot ${required?"req":""}" onclick="${onTake}"><span class="ico">${kind==="video"?"🎥":"📷"}</span>${esc(label)}<span class="tag">${required?"Required":"Optional"}${extra?" · "+extra:""}</span></button>`;
+}
+function renderStrip(sec){
+  const box = $("ms-"+sec);
+  box.innerHTML = slotsFor(sec).map(s=>slotHtml(pending[sec][s.role], s.label, s.kind,
+    `takeSlot('${sec}','${s.role}')`, `removeSlot('${sec}','${s.role}')`, s.required,
+    s.kind==="video" ? (s.min?`${s.min}–${s.max} s`:`${s.max||15} s`) : "")).join("");
+  hydrateThumbs(box);
+}
+function zoneOfForm(sec){ return $(fid(sec, ZONE_FIELD[sec])).value.trim(); }
+window.takeSlot = async (sec, role)=>{
+  const s = MEDIA[sec].find(x=>x.role===role);
+  const res = await Cam.capture({kind:s.kind, zone:zoneOfForm(sec), type:`${SECNAME[sec]} · ${s.label}`,
+    title:`${SECNAME[sec]} — ${s.label}`, min:s.min||0, max:s.max||15});
+  if(!res) return;
+  const old = pending[sec][role];
+  pending[sec][role] = await storeMedia(res, {section:sec, role, zone:zoneOfForm(sec)});
+  if(old) await dropMedia(old);
+  renderStrip(sec);
+};
+window.removeSlot = async (sec, role)=>{ const id=pending[sec][role]; delete pending[sec][role]; await dropMedia(id); renderStrip(sec); };
+async function attachMedia(sec, entry){
+  for(const [role,id] of Object.entries(entry.media||{})){
+    const m = await DB.meta(id); if(!m || m.section==="walkround") continue;
+    Object.assign(m, {attached:true, entryId:entry.id, role, zone:entryZone(sec, entry)});
+    await DB.putMeta(m);
+  }
+  Sync.kickSoon();
+}
+// Media captured for a form that was never added survives an app restart and comes back into the strip.
+async function restorePending(){
+  SECTIONS.forEach(s=>pending[s]={});
+  const list = (await DB.byDate(currentDate).catch(()=>[])).filter(m=>!m.attached && SECTIONS.includes(m.section));
+  list.sort((a,b)=>a.createdAt.localeCompare(b.createdAt)).forEach(m=>{ pending[m.section][m.role] = m.id; });
+}
 
 /* ================= Add / edit / delete ================= */
 function readForm(sec){
   const o={}; FM[sec].f.forEach(f=>o[f]=$(fid(sec,f)).value.trim());
   return o;
 }
-function clearForm(sec){ FM[sec].f.forEach(f=>{ const el=$(fid(sec,f)); if(el.tagName==="SELECT") el.selectedIndex=0; else el.value=""; }); 
+function clearForm(sec){ FM[sec].f.forEach(f=>{ const el=$(fid(sec,f)); if(el.tagName==="SELECT") el.selectedIndex=0; else el.value=""; });
   if(sec==="harvest")$("h_value").innerHTML="<small>Value</small>₦0";
-  if(sec==="activity")$("a_dur").textContent="0 h";
+  if(sec==="activity"){ $("a_dur").textContent="0 h"; syncChips(); }
   if(sec==="inputs")$("i_safe").textContent="—";
+  pending[sec] = {}; renderStrip(sec);
 }
 SECTIONS.forEach(sec=>{
-  $("add-"+sec).addEventListener("click", ()=>{
+  $("add-"+sec).addEventListener("click", async ()=>{
     const o = readForm(sec);
-    const hasContent = Object.values(o).some(v=>v!=="");
+    const hasContent = Object.values(o).some(v=>v!=="") || Object.keys(pending[sec]).length>0;
     if(!hasContent){ toast("Nothing to add — fill the form first"); return; }
-    if(editing[sec]!=null){ report[sec][editing[sec]] = o; editing[sec]=null; $("add-"+sec).textContent="+ Add "+({harvest:"harvest entry",activity:"activity",welfare:"welfare entry",inputs:"input record",losses:"loss record",requisitions:"requisition",defects:"defect / issue"}[sec]); }
+    const missing = missingMedia(sec);
+    if(missing.length){
+      if(mediaRequired()){ toast("Take the required photo/video first: "+missing[0]); $("ms-"+sec).scrollIntoView({behavior:"smooth",block:"center"}); return; }
+      toast("Practice day — still missing: "+missing.join(", "));
+    }
+    const prev = editing[sec]!=null ? report[sec][editing[sec]] : null;
+    o.id = (prev && prev.id) || uid();
+    o.media = Object.assign({}, pending[sec]);
+    if(prev && prev.resolved) o.resolved = prev.resolved;
+    if(prev){ report[sec][editing[sec]] = o; editing[sec]=null; $("add-"+sec).textContent=ADD_LABEL[sec]; }
     else report[sec].push(o);
+    await attachMedia(sec, o);
     clearForm(sec); renderAll(); saveDay(true);
   });
 });
 window.editEntry = (sec,i)=>{
   const e=report[sec][i]; FM[sec].f.forEach(f=>$(fid(sec,f)).value = e[f]||"");
   editing[sec]=i; $("add-"+sec).textContent="✓ Update entry";
+  pending[sec] = Object.assign({}, e.media||{}); renderStrip(sec);
   if(sec==="harvest")$("h_qty").dispatchEvent(new Event("input"));
-  if(sec==="activity")$("a_start").dispatchEvent(new Event("input"));
+  if(sec==="activity"){ $("a_start").dispatchEvent(new Event("input")); syncChips(); }
   if(sec==="inputs")$("i_phi").dispatchEvent(new Event("input"));
   window.scrollTo({top:0,behavior:"smooth"});
 };
-window.delEntry = (sec,i)=>{ report[sec].splice(i,1); renderAll(); saveDay(true); };
+window.delEntry = async (sec,i)=>{
+  const e = report[sec].splice(i,1)[0];
+  if(editing[sec]===i){ editing[sec]=null; $("add-"+sec).textContent=ADD_LABEL[sec]; clearForm(sec); }
+  else if(editing[sec]!=null && editing[sec]>i) editing[sec]--;
+  for(const id of Object.values(e.media||{})) await dropMedia(id);
+  renderAll(); saveDay(true);
+};
+window.toggleResolved = i=>{ const e=report.welfare[i]; e.resolved = !e.resolved; renderList("welfare"); saveDay(true); };
+
+/* ================= Open Plant Welfare issues carry forward ================= */
+async function carryForward(){
+  report.carried = report.carried || [];
+  for(let back=1; back<=14; back++){
+    const d = addDays(currentDate, -back);
+    const raw = await store.get(key(d)); if(!raw) continue;
+    let prev; try{ prev = JSON.parse(raw); }catch(e){ break; }
+    const open = [
+      ...(prev.welfare||[]).map((e,i)=>({e,i})).filter(x=>!x.e.resolved).map(({e,i})=>({issueId:e.id||(d+"-welfare-"+i), since:d, location:e.location, crop:e.crop, pest:e.pest, severity:e.severity})),
+      ...(prev.carried||[]).filter(c=>!c.resolved).map(c=>({issueId:c.issueId, since:c.since, location:c.location, crop:c.crop, pest:c.pest, severity:c.severity}))
+    ];
+    open.forEach(o=>{ if(!report.carried.some(c=>c.issueId===o.issueId)) report.carried.push(Object.assign(o,{photo:null, resolved:false})); });
+    break;
+  }
+}
+function shortDate(iso){ return new Date(iso+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short"}); }
+function renderCarried(){
+  const box=$("carried"), list=report.carried||[];
+  if(!list.length){ box.innerHTML=""; return; }
+  box.innerHTML = `<h3 class="carry-h">Open issues from earlier days — ${list.filter(c=>!c.resolved).length}</h3>` + list.map((c,i)=>`
+    <div class="entry carry${c.resolved?" done":""}">
+      <div class="e-top"><span class="e-title">${esc(c.location||"?")} · ${esc(c.pest||"Issue")}</span><span class="e-val">${esc(c.severity||"")}</span></div>
+      <div class="e-sub">Open since ${shortDate(c.since)}${c.crop?" · "+esc(c.crop):""}${c.resolved?' · <span class="badge-ok">Marked resolved</span>':""}</div>
+      ${c.resolved && !c.photo ? "" : `<div class="mstrip" style="margin:10px 0 2px">${slotHtml(c.photo, "Today's photo of the same plants", "photo", `takeCarried(${i})`, `removeCarried(${i})`, !c.resolved)}</div>`}
+      <div class="e-actions"><button class="e-edit" onclick="toggleCarried(${i})">${c.resolved?"Reopen":"Mark resolved"}</button></div>
+    </div>`).join("");
+  hydrateThumbs(box);
+}
+async function ghostForIssue(issueId){
+  const prior = (await DB.all()).filter(m=>m.entryId===issueId && m.kind==="photo" && m.date<currentDate).sort((a,b)=>b.date.localeCompare(a.date) || (a.role==="closeup"?-1:1));
+  if(!prior.length) return null; const b = await DB.blobs(prior[0].id); return b ? URL.createObjectURL(b.blob) : null;
+}
+window.takeCarried = async i=>{
+  const c = report.carried[i]; const ghost = await ghostForIssue(c.issueId);
+  const res = await Cam.capture({kind:"photo", zone:c.location, type:"Plant Welfare follow-up", title:`Follow-up — ${c.location} · ${c.pest||"issue"}`, ghost});
+  if(ghost) URL.revokeObjectURL(ghost);
+  if(!res) return;
+  const old = c.photo;
+  c.photo = await storeMedia(res, {section:"carried", role:"followup", zone:c.location, entryId:c.issueId, attached:true});
+  if(old) await dropMedia(old);
+  renderCarried(); saveDay(true);
+};
+window.removeCarried = async i=>{ const c=report.carried[i]; const id=c.photo; c.photo=null; await dropMedia(id); renderCarried(); saveDay(true); };
+window.toggleCarried = i=>{ const c=report.carried[i]; c.resolved=!c.resolved; renderCarried(); saveDay(true); };
 
 /* ================= Summary binding ================= */
 const SU = ["preparedBy","weather","status","tHigh","tLow","openIssues","wins","issues","tomorrow","reviewedBy"];
@@ -564,24 +944,594 @@ function markDirty(){ dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(
 async function saveDay(silent){
   report.date = currentDate;
   await store.set(key(currentDate), JSON.stringify(report));
+  markReportChanged(currentDate);
   dirty=false; $("saveDot").style.display="inline-block";
   if(!silent) toast("Day saved");
+}
+function normalize(r, d){
+  r = Object.assign(blank(), r);
+  SECTIONS.forEach(s=>{ if(!Array.isArray(r[s])) r[s]=[]; r[s].forEach((e,i)=>{ if(!e.id) e.id = d+"-"+s+"-"+i; if(!e.media) e.media={}; }); });
+  if(!r.walkround || typeof r.walkround!=="object") r.walkround={};
+  if(!Array.isArray(r.carried)) r.carried=[];
+  if(!Array.isArray(r.pdfs)) r.pdfs=[];
+  return r;
 }
 async function loadDay(d){
   currentDate=d;
   const raw = await store.get(key(d));
-  report = raw ? Object.assign(blank(), JSON.parse(raw)) : blank();
-  SECTIONS.forEach(s=>{ if(!Array.isArray(report[s])) report[s]=[]; });
+  report = normalize(raw ? JSON.parse(raw) : {}, d);
+  editing = {}; SECTIONS.forEach(s=>$("add-"+s).textContent=ADD_LABEL[s]);
+  await carryForward();
+  await restorePending();
   loadSummaryUI(); renderAll();
   $("i_safe").textContent = safeDate(currentDate, $("i_phi").value);
   $("saveDot").style.display = raw ? "inline-block" : "none";
+  updateSyncBar();
 }
 $("reportDate").value = currentDate;
 $("reportDate").addEventListener("change", async e=>{ if(dirty) await saveDay(true); loadDay(e.target.value); });
 $("btnSave").addEventListener("click", ()=>saveDay(false));
 
-function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2200); }
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2600); }
+
+/* ================= Bottom sheet ================= */
+let sheetClose = null;
+function openSheet(html, onClose){ if(sheetClose) sheetClose(); $("sheet").innerHTML=html; $("sheetBg").hidden=false; sheetClose=onClose||null; }
+function closeSheet(){ $("sheetBg").hidden=true; $("sheet").innerHTML=""; if(sheetClose){ const f=sheetClose; sheetClose=null; f(); } }
+$("sheetBg").addEventListener("click", e=>{ if(e.target===$("sheetBg")) closeSheet(); });
+window.closeSheet = closeSheet;
+window.viewMedia = async id=>{
+  const m = await DB.meta(id), b = await DB.blobs(id); if(!m||!b) return;
+  const u = URL.createObjectURL(b.blob);
+  openSheet(`${m.kind==="video" ? `<video src="${u}" controls playsinline style="width:100%;border-radius:10px;background:#000"></video>` : `<img src="${u}" style="width:100%;border-radius:10px" alt="">`}
+    <div class="sect-note" style="margin:8px 0">${esc(stampText(m))} · ${m.uploaded?"Uploaded":"Not uploaded yet"}${m.duration?" · "+m.duration+" s":""} · ${(b.blob.size/1024/1024).toFixed(2)} MB</div>
+    <button class="btn btn-plain" onclick="closeSheet()">Close</button>`, ()=>URL.revokeObjectURL(u));
+};
 </script>
+
+<script>
+/* ================= In-app camera: photos & videos are stamped with date, time, zone, entry and GPS ================= */
+const Cam = (()=>{
+  const el = id => document.getElementById(id);
+  let stream=null, opts=null, finish=null, gpsWatch=null, lastFix=null, rec=null, tick=null, reviewUrl=null, current=null;
+
+  function gpsStart(){
+    if(!navigator.geolocation || gpsWatch!=null) return;
+    gpsWatch = navigator.geolocation.watchPosition(p=>{
+      lastFix = {lat:p.coords.latitude, lng:p.coords.longitude, acc:Math.round(p.coords.accuracy), t:Date.now()}; gpsShow();
+    }, ()=>gpsShow(), {enableHighAccuracy:true, maximumAge:15000, timeout:30000});
+  }
+  function gpsNow(){ return lastFix && Date.now()-lastFix.t < 180000 ? {lat:+lastFix.lat.toFixed(6), lng:+lastFix.lng.toFixed(6), acc:lastFix.acc} : null; }
+  function gpsShow(){ const g=gpsNow(); el("camGps").textContent = g ? `GPS ±${g.acc} m` : "GPS: searching…"; }
+
+  function stampLines(when, gps){
+    const d = when.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+    const t = when.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    return [`${d}  ${t}`, `${opts.zone||"No zone"} · ${opts.type}`, gps ? `GPS ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)} ±${gps.acc} m` : "GPS: no fix"];
+  }
+  function drawStamp(ctx, w, h, lines){
+    const fs = Math.max(11, Math.round(Math.min(w,h)*0.034)), lh = Math.round(fs*1.28), padv = Math.round(fs*0.45);
+    const bh = lh*lines.length + padv*2;
+    ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(0, h-bh, w, bh);
+    ctx.fillStyle = "#fff"; ctx.textBaseline = "top"; ctx.font = `600 ${fs}px sans-serif`;
+    lines.forEach((l,i)=>ctx.fillText(l, Math.round(fs*0.6), h-bh+padv+i*lh, w-fs));
+  }
+  const toBlob = (c,type,q) => new Promise(r=>c.toBlob(r,type,q));
+  function canvasOf(src, sw, sh, edge){
+    const k = Math.min(1, edge/Math.max(sw,sh)); const c=document.createElement("canvas");
+    c.width=Math.round(sw*k); c.height=Math.round(sh*k); c.getContext("2d").drawImage(src,0,0,c.width,c.height); return c;
+  }
+  // Photo: long edge 1,280 px, JPEG stepped down until it is about 150–250 KB.
+  async function makePhoto(src, sw, sh, when){
+    const c = canvasOf(src, sw, sh, 1280), gps = gpsNow();
+    drawStamp(c.getContext("2d"), c.width, c.height, stampLines(when, gps));
+    let q=0.84, blob;
+    while(true){ blob = await toBlob(c,"image/jpeg",q); if(blob.size <= 250*1024 || q <= 0.42) break; q -= 0.07; }
+    const thumb = await toBlob(canvasOf(c, c.width, c.height, 360), "image/jpeg", 0.62);
+    return {kind:"photo", blob, thumb, mime:"image/jpeg", capturedAt:when.toISOString(), gps, width:c.width, height:c.height};
+  }
+
+  // Video: re-drawn through a canvas so the stamp is burned in; 480p (or 360p), 15 s maximum.
+  function pickMime(){
+    const c = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp8,opus","video/webm;codecs=vp8","video/webm"];
+    return (window.MediaRecorder && c.find(m=>MediaRecorder.isTypeSupported(m))) || "";
+  }
+  function startRec(srcVideo, audioTrack, fixedWhen){
+    const short = Number(S.videoQuality)===360 ? 360 : 480;
+    const vw = srcVideo.videoWidth, vh = srcVideo.videoHeight, k = Math.min(1, short/Math.min(vw,vh));
+    const w = Math.round(vw*k/2)*2, h = Math.round(vh*k/2)*2;
+    const c = document.createElement("canvas"); c.width=w; c.height=h; const ctx = c.getContext("2d");
+    const st = {c, chunks:[], started:performance.now(), thumb:null, raf:0, gps:gpsNow(), when:fixedWhen||new Date()};
+    const draw = ()=>{
+      ctx.drawImage(srcVideo,0,0,w,h);
+      const now = fixedWhen ? new Date(fixedWhen.getTime() + (performance.now()-st.started)) : new Date();
+      drawStamp(ctx, w, h, stampLines(now, gpsNow() || st.gps));
+      st.raf = requestAnimationFrame(draw);
+    };
+    draw();
+    const cs = c.captureStream(25); if(audioTrack) cs.addTrack(audioTrack);
+    const mime = pickMime();
+    const mr = new MediaRecorder(cs, Object.assign({videoBitsPerSecond: short===480 ? 1400000 : 700000, audioBitsPerSecond:48000}, mime?{mimeType:mime}:{}));
+    mr.ondataavailable = e=>{ if(e.data && e.data.size) st.chunks.push(e.data); };
+    st.mr = mr; st.mime = (mr.mimeType || mime || "video/webm").split(";")[0];
+    mr.start(1000);
+    setTimeout(async()=>{ if(!st.thumb) st.thumb = await toBlob(canvasOf(c,w,h,360),"image/jpeg",0.62); }, 400);
+    return st;
+  }
+  function stopRec(st){
+    return new Promise(res=>{
+      st.mr.onstop = async ()=>{
+        cancelAnimationFrame(st.raf);
+        if(!st.thumb) st.thumb = await toBlob(canvasOf(st.c, st.c.width, st.c.height, 360), "image/jpeg", 0.62);
+        res({kind:"video", blob:new Blob(st.chunks,{type:st.mime}), thumb:st.thumb, mime:st.mime, capturedAt:st.when.toISOString(),
+          gps:st.gps||gpsNow(), duration:Math.round((performance.now()-st.started)/100)/10});
+      };
+      if(st.mr.state!=="inactive") st.mr.stop(); else st.mr.onstop();
+    });
+  }
+
+  function mode(m){ el("camStage").hidden = m!=="live"; el("camReview").hidden = m!=="review"; el("camMsg").hidden = m!=="msg"; el("camBottom").hidden = m!=="live"; }
+  function layout(){
+    const v=el("camVideo"), st=el("camStage"); if(!v.videoWidth) return;
+    const k = Math.min(st.clientWidth/v.videoWidth, st.clientHeight/v.videoHeight);
+    el("camFrame").style.width = Math.floor(v.videoWidth*k)+"px"; el("camFrame").style.height = Math.floor(v.videoHeight*k)+"px";
+  }
+  window.addEventListener("resize", ()=>{ if(!el("cam").hidden) layout(); });
+  function showLive(){
+    mode("live");
+    const sh = el("camShot"); sh.className = "shutter" + (opts.kind==="video" ? " video" : "");
+    el("camTimer").classList.remove("on");
+    el("camHint").textContent = opts.kind==="video"
+      ? `Tap to record. ${opts.min?`At least ${opts.min} s, `:""}stops by itself at ${opts.max} s.`
+      : (opts.ghost ? "Line up with yesterday's faint photo, then tap." : "Tap to take the photo.");
+    requestAnimationFrame(layout);
+  }
+  function showMsg(html, buttons){
+    mode("msg"); el("camMsg").innerHTML = `<div>${html}</div>`;
+    (buttons||[]).forEach(([label, cls, fn])=>{ const b=document.createElement("button"); b.className="cam-btn "+cls; b.textContent=label; b.onclick=fn; el("camMsg").appendChild(b); });
+  }
+  function showReview(res){
+    current = res; mode("review");
+    if(reviewUrl) URL.revokeObjectURL(reviewUrl);
+    reviewUrl = URL.createObjectURL(res.blob);
+    el("camReview").innerHTML = res.kind==="video"
+      ? `<video src="${reviewUrl}" controls autoplay playsinline muted></video>` : `<img src="${reviewUrl}" alt="">`;
+    const bar = document.createElement("div"); bar.style.cssText="position:absolute;left:0;right:0;bottom:0;display:flex;gap:12px;justify-content:center;padding:16px 16px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.7))";
+    const again = document.createElement("button"); again.className="cam-btn again"; again.textContent="Retake";
+    again.onclick = ()=>{ current=null; if(stream) showLive(); else fallbackPick(); };
+    const use = document.createElement("button"); use.className="cam-btn use"; use.textContent="Use "+(res.kind==="video"?"video":"photo");
+    use.onclick = ()=>close(current);
+    bar.append(again, use); el("camReview").appendChild(bar);
+  }
+  function stopStream(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } el("camVideo").srcObject=null; }
+  function close(res){
+    clearInterval(tick); tick=null;
+    if(rec){ try{ cancelAnimationFrame(rec.raf); if(rec.mr.state!=="inactive") rec.mr.stop(); }catch(e){} rec=null; }
+    stopStream();
+    if(reviewUrl){ URL.revokeObjectURL(reviewUrl); reviewUrl=null; }
+    el("camReview").innerHTML=""; el("cam").hidden=true; document.body.classList.remove("noscroll");
+    const f=finish; finish=null; current=null; if(f) f(res||null);
+  }
+  async function openStream(){
+    const video = opts.kind==="video";
+    const vc = {facingMode:{ideal:"environment"}, width:{ideal: video?1280:1920}, height:{ideal: video?720:1080}};
+    try{ stream = await navigator.mediaDevices.getUserMedia({video:vc, audio:video}); }
+    catch(e){ if(!video) throw e; stream = await navigator.mediaDevices.getUserMedia({video:vc, audio:false}); }
+    const v = el("camVideo"); v.srcObject = stream;
+    await new Promise(r=>{ if(v.readyState>=1 && v.videoWidth) r(); else v.onloadedmetadata = ()=>r(); });
+    await v.play().catch(()=>{});
+    showLive();
+  }
+  // Fallback for phones where the live camera can't open in the browser: the input opens the camera (capture=environment),
+  // not the gallery, and the app still stamps and resizes what comes back.
+  function fallbackPick(){
+    const inp = el(opts.kind==="photo" ? "fbPhoto" : "fbVideo"); inp.value = "";
+    inp.onchange = async ()=>{
+      const f = inp.files[0]; if(!f) return;
+      showMsg("Processing…");
+      try{ showReview(opts.kind==="photo" ? await photoFromFile(f) : await videoFromFile(f)); }
+      catch(e){ console.error(e); showMsg("That file could not be read. Try again.", [["Try again","use",fallbackPick],["Cancel","again",()=>close(null)]]); }
+    };
+    inp.click();
+  }
+  async function photoFromFile(f){
+    const bmp = await createImageBitmap(f, {imageOrientation:"from-image"}).catch(()=>createImageBitmap(f));
+    return makePhoto(bmp, bmp.width, bmp.height, new Date());
+  }
+  async function videoFromFile(f){
+    const v = document.createElement("video"); v.muted=true; v.playsInline=true; v.src=URL.createObjectURL(f);
+    await new Promise((res,rej)=>{ v.onloadedmetadata=res; v.onerror=rej; });
+    const dur = Math.min(isFinite(v.duration)?v.duration:opts.max, opts.max);
+    await v.play();
+    const st = startRec(v, null, new Date(f.lastModified - (isFinite(v.duration)?v.duration:0)*1000));
+    await new Promise(r=>{ const iv=setInterval(()=>{ if(v.ended || v.currentTime>=dur){ clearInterval(iv); r(); } }, 100); });
+    v.pause(); const res = await stopRec(st); URL.revokeObjectURL(v.src); res.duration = Math.round(dur*10)/10; return res;
+  }
+  async function finishRec(){
+    clearInterval(tick); tick=null; el("camTimer").classList.remove("on");
+    const st = rec; rec = null; const res = await stopRec(st); showReview(res);
+  }
+  el("camShot").onclick = async ()=>{
+    const v = el("camVideo");
+    if(opts.kind==="photo"){ if(!v.videoWidth) return; showReview(await makePhoto(v, v.videoWidth, v.videoHeight, new Date())); return; }
+    if(!rec){
+      if(!v.videoWidth) return;
+      rec = startRec(v, stream.getAudioTracks()[0]||null, null);
+      el("camShot").classList.add("rec"); el("camTimer").classList.add("on");
+      const t0 = performance.now();
+      tick = setInterval(()=>{
+        const s = (performance.now()-t0)/1000;
+        el("camTimer").textContent = `● 0:${pad(Math.floor(s))} / 0:${pad(opts.max)}`;
+        if(s >= opts.max) finishRec();
+      }, 200);
+    } else {
+      const s = (performance.now()-rec.started)/1000;
+      if(s < opts.min){ toast(`Keep filming — at least ${opts.min} seconds`); return; }
+      finishRec();
+    }
+  };
+  el("camClose").onclick = ()=>close(null);
+
+  async function capture(o){
+    opts = Object.assign({kind:"photo", zone:"", type:"", title:"", ghost:null, min:0, max:15}, o);
+    gpsStart();
+    return new Promise(resolve=>{
+      finish = resolve;
+      el("cam").hidden = false; document.body.classList.add("noscroll");
+      el("camTitle").textContent = opts.title; gpsShow();
+      const g = el("camGhost"); g.hidden = !opts.ghost; g.src = opts.ghost || "";
+      if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || !window.MediaRecorder && opts.kind==="video"){
+        showMsg("The live camera isn't available in this browser.", [["Open phone camera","use",fallbackPick],["Cancel","again",()=>close(null)]]);
+        return;
+      }
+      showMsg("Opening camera…");
+      openStream().catch(err=>{
+        console.warn(err); stopStream();
+        showMsg("Couldn't open the camera here. Allow camera access, or use the phone camera instead.",
+          [["Open phone camera","use",fallbackPick],["Cancel","again",()=>close(null)]]);
+      });
+    });
+  }
+  return {capture, gpsStart};
+})();
+</script>
+
+<script>
+/* ================= Walk-round: the farm's state three times a day ================= */
+const ROUNDS = [
+  {k:"morning", label:"Morning", code:"AM", from:"06:15", to:"07:00", note:"before morning watering", videoReq:true},
+  {k:"midday",  label:"Midday",  code:"MD", from:"12:30", to:"13:30", note:"peak heat",               videoReq:false},
+  {k:"evening", label:"Evening", code:"PM", from:"17:30", to:"18:30", note:"after evening watering",  videoReq:true}
+];
+const roundOf = k => ROUNDS.find(r=>r.k===k);
+// Walking order. Gate and perimeter only on the morning and evening rounds.
+function zonesFor(rk){
+  const base = ["GH-01","GH-02","GH-03","GH-04","GH-05", ...activePlots(), "Nursery", "Water System", "Store"];
+  return rk==="midday" ? base : ["Gate & Perimeter", ...base];
+}
+function zonesOf(rk){ return (report.walkround[rk] && report.walkround[rk].zoneList) || zonesFor(rk); }
+function nowHM(){ const d=new Date(); return pad(d.getHours())+":"+pad(d.getMinutes()); }
+let wrRound = null;
+function defaultRound(){ const t=nowHM(); return t<"10:00" ? "morning" : t<"15:30" ? "midday" : "evening"; }
+function wr(rk){ return report.walkround[rk] || (report.walkround[rk] = {start:"", end:"", zones:{}}); }
+function zoneDone(rk, z){
+  const d = ((report.walkround[rk]||{}).zones||{})[z];
+  return !!(d && d.photo && (d.video || !roundOf(rk).videoReq) && d.status);
+}
+function roundSummary(rk){
+  const r = report.walkround[rk]; if(!r || !r.start) return "Not started";
+  const zs = zonesOf(rk); return `${zs.filter(z=>zoneDone(rk,z)).length} of ${zs.length} zones, ${r.start}–${r.end||"…"}`;
+}
+function renderWalk(){
+  if(!wrRound) wrRound = defaultRound();
+  $("wrRounds").innerHTML = ROUNDS.map(r=>`<button class="round ${r.k===wrRound?"on":""}" onclick="pickRound('${r.k}')"><b>${r.label}</b><span>${r.from}–${r.to}</span><em>${esc(roundSummary(r.k))}</em></button>`).join("");
+  const r = roundOf(wrRound), st = report.walkround[wrRound];
+  if(!st || !st.start){
+    const t = nowHM(), outside = currentDate===todayISO() && (t<r.from || t>r.to);
+    $("wrBody").innerHTML = `<div class="card"><div class="sect-note"><b>${r.label} round, ${r.from}–${r.to}</b> (${r.note}).<br>
+      Photo required at every zone; video ${r.videoReq?"required, 10–15 s":"optional"}. ${zonesFor(wrRound).length} zones.
+      ${outside?`<br><b style="color:var(--warn)">It is ${t}, outside the ${r.from}–${r.to} window.</b> The real start time is recorded.`:""}</div>
+      <button class="btn btn-add" onclick="startRound()">Start ${r.label.toLowerCase()} round</button></div>`;
+    return;
+  }
+  const zs = zonesOf(wrRound);
+  const rows = zs.map((z,i)=>{
+    const d = st.zones[z] || {}, done = zoneDone(wrRound, z);
+    return `<div class="zone ${d.status==="Problem"?"problem":done?"done":""}">
+      <div class="z-head"><span class="z-name">${i+1}. ${esc(z)}</span><span class="z-state">${done?"✓ "+esc(d.at||""):(d.at?esc(d.at):"")}</span></div>
+      <div class="mstrip">
+        ${slotHtml(d.photo, "Photo from the post", "photo", `takeZone(${i},'photo')`, `retakeZone(${i},'photo')`, true)}
+        ${slotHtml(d.video, "Slow pan along the rows", "video", `takeZone(${i},'video')`, `retakeZone(${i},'video')`, r.videoReq, "10–15 s")}
+      </div>
+      <div class="z-status">${["OK","Watch","Problem"].map(w=>`<button type="button" class="${d.status===w?w.toLowerCase():""}" onclick="setZoneStatus(${i},'${w}')">${w}</button>`).join("")}</div>
+    </div>`;
+  }).join("");
+  const n = zs.filter(z=>zoneDone(wrRound,z)).length;
+  $("wrBody").innerHTML = `<div class="wr-sum">${r.label}: ${esc(roundSummary(wrRound))}</div>${rows}
+    ${st.end ? `<div class="empty">Round finished at ${esc(st.end)} — ${n} of ${zs.length} zones. You can still retake a zone.</div>`
+             : `<button class="btn btn-save" onclick="finishRound()">Finish ${r.label.toLowerCase()} round (${n} of ${zs.length} zones)</button>`}`;
+  hydrateThumbs($("wrBody"));
+}
+window.pickRound = k=>{ wrRound=k; renderWalk(); };
+window.startRound = async ()=>{ const st=wr(wrRound); st.start=nowHM(); st.end=""; st.zoneList=zonesFor(wrRound); await saveDay(true); renderWalk(); refreshHeader(); };
+window.finishRound = async ()=>{ const st=wr(wrRound); st.end=nowHM(); await saveDay(true); renderWalk(); toast(roundOf(wrRound).label+": "+roundSummary(wrRound)); };
+// The previous day's photo of the same zone and round, shown faintly to line up the same angle.
+async function prevZonePhoto(z, rk){
+  const prior = (await DB.all()).filter(m=>m.section==="walkround" && m.zone===z && m.round===rk && m.kind==="photo" && m.date<currentDate)
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  for(const m of prior){ const b = await DB.blobs(m.id); if(b) return URL.createObjectURL(b.blob); }
+  return null;
+}
+function isReferenced(id){ return SECTIONS.some(s=>report[s].some(e=>Object.values(e.media||{}).includes(id))); }
+window.takeZone = async (i, kind)=>{
+  const st=wr(wrRound), rk=wrRound, z=zonesOf(rk)[i], r=roundOf(rk);
+  const ghost = kind==="photo" ? await prevZonePhoto(z, rk) : null;
+  const res = await Cam.capture({kind, zone:z, type:`Walk-round ${r.label}`, ghost, min:kind==="video"?10:0, max:15,
+    title:`${r.label} · ${z} — ${kind==="photo"?"photo from the post":"slow pan along the rows"}`});
+  if(ghost) URL.revokeObjectURL(ghost);
+  if(!res) return;
+  const zd = st.zones[z] || (st.zones[z] = {});
+  const old = zd[kind];
+  zd[kind] = await storeMedia(res, {section:"walkround", round:rk, zone:z, role:kind, attached:true});
+  if(old && !isReferenced(old)) await DB.del(old);
+  if(!zd.at) zd.at = nowHM();
+  await saveDay(true); renderWalk(); refreshHeader();
+};
+window.retakeZone = (i, kind)=>takeZone(i, kind);
+window.setZoneStatus = async (i, w)=>{
+  const st=wr(wrRound), z=zonesOf(wrRound)[i], zd = st.zones[z] || (st.zones[z] = {});
+  zd.status = w; if(!zd.at) zd.at = nowHM();
+  await saveDay(true); renderWalk(); refreshHeader();
+  if(w==="Problem") problemSheet(z, zd);
+};
+// Problem opens Plant Welfare or Defects with the zone and the round's media already attached.
+function problemSheet(z, zd){
+  openSheet(`<h3>Problem at ${esc(z)}</h3><div class="sect-note">Open a form with the zone and this round's photo and video already attached.</div>
+    <button class="btn btn-add" id="pbW">Plant Welfare — crop problem</button><div class="gap"></div>
+    <button class="btn btn-save" id="pbD">Defects — equipment, water, store, security</button><div class="gap"></div>
+    <button class="btn btn-plain" onclick="closeSheet()">Later</button>`);
+  $("pbW").onclick = ()=>{ closeSheet(); openProblem("welfare", z, zd); };
+  $("pbD").onclick = ()=>{ closeSheet(); openProblem("defects", z, zd); };
+}
+function openProblem(sec, z, zd){
+  showTab(sec);
+  const sel = $(sec==="welfare" ? "w_location" : "d_location");
+  if(![...sel.options].some(o=>o.value===z)) sel.add(new Option(z, z));
+  sel.value = z;
+  const p = pending[sec];
+  if(sec==="welfare"){ if(zd.photo) p.wide = zd.photo; if(zd.video) p.video = zd.video; }
+  else { if(zd.photo) p.defect = zd.photo; if(zd.video) p.video = zd.video; }
+  renderStrip(sec);
+  setTimeout(()=>$("ms-"+sec).scrollIntoView({behavior:"smooth", block:"center"}), 200);
+  toast("Zone and walk-round media attached — finish the form");
+}
+</script>
+
+<script>
+/* ================= Upload queue: runs in the background, never blocks Save day or Extract PDF ================= */
+const SYNC_KEY = "dvf-report-sync";
+function syncState(){ try{ return JSON.parse(localStorage.getItem(SYNC_KEY)||"{}") || {}; }catch(e){ return {}; } }
+function setSyncState(o){ try{ localStorage.setItem(SYNC_KEY, JSON.stringify(o)); }catch(e){} }
+function markReportChanged(d){ const s=syncState(); const x=s[d]||{rev:0,sent:0}; x.rev++; x.changedAt=x.changedAt&&x.rev>x.sent+1?x.changedAt:Date.now(); s[d]=x; setSyncState(s); Sync.kickSoon(); }
+function onWifi(){ const c=navigator.connection; return !c || !c.type || c.type==="wifi" || c.type==="ethernet" || c.type==="unknown"; }
+const extOf = mime => /pdf/.test(mime) ? "pdf" : /jpe?g/.test(mime) ? "jpg" : /mp4/.test(mime) ? "mp4" : /webm/.test(mime) ? "webm" : "bin";
+
+// File names: DVF_2026-10-13_GH-01_AM.mp4 for walk-rounds; DVF_2026-10-13_Inputs-4_label.jpg for entries.
+function mediaFileName(m, r){
+  const ext = extOf(m.mime||""), zone = String(m.zone||"zone").replace(/[^A-Za-z0-9-]+/g,"-").replace(/^-|-$/g,"");
+  if(m.kind==="pdf") return `DVF_${m.date}_Report_v${m.version||1}.pdf`;
+  if(m.section==="walkround") return `DVF_${m.date}_${zone}_${(roundOf(m.round)||{}).code||m.round}.${ext}`;
+  if(m.section==="carried") return `DVF_${m.date}_Followup_${zone}_${m.id.slice(-5)}.${ext}`;
+  const i = r && r[m.section] ? r[m.section].findIndex(e=>e.id===m.entryId) : -1;
+  return `DVF_${m.date}_${FILESEC[m.section]||m.section}-${i>=0?i+1:"x"}_${m.role}_${m.id.slice(-5)}.${ext}`;
+}
+// Label, e.g. "Inputs 4 — Velum Prime, GH-01 · Product label"
+function mediaLabel(m, r){
+  if(m.kind==="pdf") return `Report PDF v${m.version||1}`;
+  if(m.section==="walkround") return `Walk-round ${(roundOf(m.round)||{}).label||m.round} — ${m.zone}`;
+  if(m.section==="carried"){ const c=(r&&r.carried||[]).find(x=>x.issueId===m.entryId); return `Welfare follow-up — ${m.zone}${c&&c.pest?" · "+c.pest:""}${c?" (open since "+c.since+")":""}`; }
+  const list = r && r[m.section] || [], i = list.findIndex(e=>e.id===m.entryId);
+  return i>=0 ? `${SECNAME[m.section]} ${i+1} — ${shortLabel(m.section, list[i])} · ${roleLabel(m.section, m.role)}` : `${SECNAME[m.section]||m.section} · ${roleLabel(m.section, m.role)}`;
+}
+function mediaIdsOf(r){
+  const ids = [];
+  SECTIONS.forEach(s=>r[s].forEach(e=>Object.values(e.media||{}).forEach(id=>id && ids.push(id))));
+  Object.values(r.walkround||{}).forEach(st=>Object.values(st.zones||{}).forEach(z=>{ if(z.photo) ids.push(z.photo); if(z.video) ids.push(z.video); }));
+  (r.carried||[]).forEach(c=>c.photo && ids.push(c.photo));
+  (r.pdfs||[]).forEach(p=>p.id && ids.push(p.id));
+  return [...new Set(ids)];
+}
+function daySummary(r){
+  const t = totalsOf(r), flagged = new Set();
+  Object.values(r.walkround||{}).forEach(st=>Object.entries(st.zones||{}).forEach(([z,d])=>{ if(d.status==="Watch"||d.status==="Problem") flagged.add(z); }));
+  ["welfare","defects","losses"].forEach(s=>r[s].forEach(e=>csvList(e.location).forEach(z=>flagged.add(z))));
+  const problem = Object.values(r.walkround||{}).some(st=>Object.values(st.zones||{}).some(z=>z.status==="Problem"))
+    || r.welfare.some(e=>!e.resolved && Number(String(e.severity).charAt(0))>=4)
+    || r.carried.some(c=>!c.resolved && Number(String(c.severity).charAt(0))>=4);
+  return {preparedBy:r.summary.preparedBy||"", weather:r.summary.weather||"", status:r.summary.status||"", harvestKg:t.kg, harvestValue:t.val,
+    activityHours:t.hrs, flags:t.flags, openIssues:r.summary.openIssues||"0", problem, zonesFlagged:[...flagged].join(", "), expectedIds:mediaIdsOf(r)};
+}
+function reportForUpload(r){
+  const out = JSON.parse(JSON.stringify(r));
+  out._titles = {}; SECTIONS.forEach(s=>out._titles[s] = r[s].map(e=>TITLE[s](e)));
+  out._rounds = ROUNDS.map(x=>Object.assign({}, x, {zones: (r.walkround[x.k]&&r.walkround[x.k].zoneList) || zonesFor(x.k)}));
+  out._totals = totalsOf(r);
+  out._media = {}; SECTIONS.forEach(s=>out._media[s] = MEDIA[s].map(x=>({role:x.role, label:x.label})));
+  return out;
+}
+async function pendingWork(){
+  const rs = syncState();
+  const reports = Object.keys(rs).filter(d=>rs[d].rev > (rs[d].sent||0)).sort();
+  const media = (await DB.all().catch(()=>[])).filter(m=>m.attached && !m.uploaded && !m.lost);
+  return {reports, media};
+}
+async function post(body){
+  const ctrl = new AbortController(), t = setTimeout(()=>ctrl.abort(), 240000);
+  try{
+    const r = await fetch(S.uploadUrl, {method:"POST", body:JSON.stringify(body), headers:{"Content-Type":"text/plain;charset=utf-8"}, signal:ctrl.signal, redirect:"follow"});
+    const txt = await r.text();
+    try{ return JSON.parse(txt); }catch(e){ throw new Error("The upload link didn't answer as expected — check it in Settings"); }
+  } finally { clearTimeout(t); }
+}
+const b64 = blob => new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(",")[1]||""); fr.onerror=()=>rej(fr.error); fr.readAsDataURL(blob); });
+async function sha256(blob){
+  if(!(window.crypto && crypto.subtle)) return "";
+  const h = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+  return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function loadReport(d){ const raw = await store.get(key(d)); return raw ? normalize(JSON.parse(raw), d) : null; }
+async function uploadReport(d){
+  const rev = (syncState()[d]||{}).rev || 0;
+  const r = await loadReport(d);
+  if(r){
+    const res = await post({action:"report", key:S.farmKey, date:d, report:reportForUpload(r), day:daySummary(r)});
+    if(!res.ok) throw new Error(res.error || "Report upload failed");
+  }
+  const s = syncState(); if(s[d]){ s[d].sent = Math.max(s[d].sent||0, rev); setSyncState(s); }
+}
+async function uploadMedia(m0){
+  const b = await DB.blobs(m0.id); const m = await DB.meta(m0.id); if(!m) return;
+  if(!b || !b.blob){ m.lost = true; await DB.putMeta(m); return; }
+  try{
+    if(!m.sha256) m.sha256 = await sha256(b.blob);
+    const r = await loadReport(m.date);
+    const meta = {id:m.id, date:m.date, zone:m.zone||"", round:m.round||"", section:m.section||"", entryId:m.entryId||"", role:m.role||"",
+      type:m.kind, name:mediaFileName(m, r), label:mediaLabel(m, r), capturedAt:m.capturedAt||"",
+      lat:m.gps?m.gps.lat:"", lng:m.gps?m.gps.lng:"", accuracy:m.gps?m.gps.acc:"", duration:m.duration||"",
+      size:b.blob.size, sha256:m.sha256, mime:m.mime||"", version:m.version||""};
+    const res = await post({action:"file", key:S.farmKey, meta, data:await b64(b.blob), thumb:b.thumb ? await b64(b.thumb) : ""});
+    if(!res.ok) throw new Error(res.error || "Upload failed");
+    // Only count it as safe once the server confirms the same size and checksum.
+    if(Number(res.size)!==b.blob.size || (m.sha256 && res.sha256!==m.sha256)) throw new Error("Server copy incomplete — will retry");
+    Object.assign(m, {uploaded:true, uploadedAt:new Date().toISOString(), fileId:res.fileId, lastError:""});
+    await DB.putMeta(m);
+  }catch(err){
+    m.attempts = (m.attempts||0)+1; m.lastError = String(err && err.message || err); await DB.putMeta(m); throw err;
+  }
+}
+const Sync = {
+  busy:false, wait:0, timer:null, soon:null, lastError:"",
+  kickSoon(){ clearTimeout(this.soon); this.soon = setTimeout(()=>this.run(), 1500); },
+  async run(){
+    if(this.busy) return; this.busy = true; clearTimeout(this.timer);
+    try{
+      while(S.uploadUrl && S.farmKey && navigator.onLine){
+        const w = await pendingWork(); let job = null;
+        if(w.reports.length){ const d = w.reports[0]; job = ()=>uploadReport(d); }
+        else {
+          const vids = !S.wifiOnly || onWifi();
+          const list = w.media.filter(m=>m.kind!=="video" || vids)
+            .sort((a,b)=>(a.attempts||0)-(b.attempts||0) || (a.kind==="video")-(b.kind==="video") || a.createdAt.localeCompare(b.createdAt));
+          if(list.length){ const m = list[0]; job = ()=>uploadMedia(m); }
+        }
+        if(!job) break;
+        updateSyncBar(true);
+        await job();
+        this.wait = 0; this.lastError = "";
+      }
+    }catch(err){
+      this.lastError = String(err && err.message || err);
+      this.wait = Math.min(300000, this.wait ? this.wait*2 : 10000);
+      this.timer = setTimeout(()=>this.run(), this.wait);
+    }finally{ this.busy = false; updateSyncBar(); }
+  }
+};
+window.addEventListener("online", ()=>Sync.run());
+window.addEventListener("offline", ()=>updateSyncBar());
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) Sync.run(); });
+setInterval(()=>{ if(!Sync.busy) Sync.run(); }, 60000);
+
+async function updateSyncBar(active){
+  const bar = $("syncBar"), set = (cls, msg)=>{ bar.className = "syncbar " + cls; $("syncText").textContent = msg; };
+  if(!S.uploadUrl || !S.farmKey){ set("off", "Uploads not set up — tap to set up"); return; }
+  const w = await pendingWork();
+  const pendingCount = w.media.length + w.reports.length;
+  if(!pendingCount){ set("ok", "All uploaded"); return; }
+  const today = (await DB.byDate(currentDate).catch(()=>[])).filter(m=>m.attached && !m.lost);
+  const done = today.filter(m=>m.uploaded).length;
+  const earlier = w.media.filter(m=>m.date!==currentDate).length;
+  const vidsHeld = S.wifiOnly && !onWifi() && w.media.some(m=>m.kind==="video");
+  if(!navigator.onLine){ set("wait", `Waiting for internet · ${w.media.length} file${w.media.length===1?"":"s"} to upload`); return; }
+  if(Sync.lastError && !Sync.busy){ set("err", `Upload paused, retrying soon · ${w.media.length} left · tap for details`); return; }
+  let msg = today.length ? `${done} of ${today.length} uploaded` : "Sending report…";
+  if(today.length && done===today.length && w.reports.length) msg += " · sending report";
+  if(earlier) msg += ` · ${earlier} from earlier days`;
+  if(vidsHeld) msg += " · videos wait for Wi-Fi";
+  set("wait", msg);
+}
+$("syncBar").addEventListener("click", openSyncSheet);
+async function openSyncSheet(){
+  if(!S.uploadUrl || !S.farmKey){ openSettings(); return; }
+  const w = await pendingWork(), rs = syncState();
+  const items = w.media.sort((a,b)=>a.date.localeCompare(b.date)).map(m=>`<div class="qitem"><b>${esc(m.date)} · ${esc(m.section==="walkround"?"Walk-round "+m.zone+" "+((roundOf(m.round)||{}).code||""):(SECNAME[m.section]||m.section)+" · "+(m.kind==="pdf"?"PDF v"+m.version:roleLabel(m.section,m.role)))}</b>
+    ${m.kind} · ${(m.size/1024/1024).toFixed(2)} MB${m.attempts?` · ${m.attempts} tries`:""}${m.lastError?`<div class="err">${esc(m.lastError)}</div>`:""}</div>`).join("");
+  const reps = w.reports.map(d=>`<div class="qitem"><b>${esc(d)} · report data</b>changed ${new Date(rs[d].changedAt||Date.now()).toLocaleString("en-GB")}</div>`).join("");
+  openSheet(`<h3>Uploads</h3>
+    <div class="sect-note">${navigator.onLine?"Online":"No internet right now"}${S.wifiOnly?" · Wi-Fi only for videos is ON":""}. Files upload one at a time and are only cleared from the phone after the server confirms them, and never before 14 days.${Sync.lastError?`<br><b style="color:var(--bad)">Last problem: ${esc(Sync.lastError)}</b>`:""}</div>
+    ${reps}${items || (reps?"":`<div class="empty">Everything is uploaded.</div>`)}
+    <div class="gap"></div><button class="btn btn-add" id="syncNow">Retry now</button><div class="gap"></div>
+    <button class="btn btn-plain" onclick="openSettings()">Settings</button><div class="gap"></div>
+    <button class="btn btn-plain" onclick="closeSheet()">Close</button>`);
+  $("syncNow").onclick = ()=>{ Sync.wait=0; Sync.lastError=""; clearTimeout(Sync.timer); Sync.run(); closeSheet(); toast("Retrying uploads"); };
+}
+
+/* ================= Housekeeping on open: 14-day clean-up, outage and storage warnings ================= */
+async function cleanup(){
+  const cutoff = addDays(todayISO(), -14);
+  for(const m of await DB.all().catch(()=>[])){
+    if(m.date >= cutoff) continue;
+    if(m.uploaded || !m.attached){ await DB.del(m.id); }
+  }
+}
+async function startupChecks(){
+  await cleanup();
+  const w = await pendingWork(), rs = syncState(), now = Date.now();
+  const oldest = Math.min(now, ...w.media.map(m=>Date.parse(m.createdAt)||now), ...w.reports.map(d=>rs[d].changedAt||now));
+  const warn = [];
+  if(now - oldest > 2*86400000) warn.push("Some photos, videos or reports have not uploaded for over 2 days. Connect to the internet and leave the app open for a few minutes.");
+  if(navigator.storage && navigator.storage.estimate){
+    try{ const e = await navigator.storage.estimate(); if(e.quota && e.quota - e.usage < 1024**3) warn.push("The phone is low on storage (under 1 GB left for this app). Let uploads finish, then free some space."); }catch(e){}
+  }
+  if(!mediaRequired() && S.mediaRule==="auto") warn.push(`Practice days: missing photos show a reminder but don't block Add. Required from ${new Date(addDays(S.firstUse,3)+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"long"})}.`);
+  if(warn.length) openSheet(`<h3>Before you start</h3>${warn.map(x=>`<div class="banner">${esc(x)}</div>`).join("")}<button class="btn btn-add" onclick="closeSheet()">OK</button>`);
+}
+
+/* ================= Settings ================= */
+$("btnSettings").addEventListener("click", ()=>openSettings());
+async function openSettings(){
+  let storageLine = "";
+  if(navigator.storage && navigator.storage.estimate){ try{ const e=await navigator.storage.estimate(); storageLine = `App storage used: ${(e.usage/1024/1024).toFixed(0)} MB of ${(e.quota/1024/1024/1024).toFixed(1)} GB available to it.`; }catch(e){} }
+  openSheet(`<h3>Settings</h3>
+    <div class="field"><label>Upload link (from the Apps Script deployment)</label><input type="url" id="st_url" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(S.uploadUrl)}"></div>
+    <div class="field"><label>Farm key</label><input type="password" id="st_key" value="${esc(S.farmKey)}" autocomplete="off"></div>
+    <div class="field switchrow"><label for="st_wifi" style="margin:0">Wi-Fi only for videos</label><input type="checkbox" id="st_wifi" ${S.wifiOnly?"checked":""}></div>
+    <div class="row2">
+      <div class="field"><label>Video quality</label><select id="st_vq"><option value="480">480p (clearer)</option><option value="360">360p (half the data)</option></select></div>
+      <div class="field"><label>Required media</label><select id="st_rule"><option value="auto">Practice 3 days, then live</option><option value="practice">Practice (remind only)</option><option value="live">Live (required)</option></select></div>
+    </div>
+    <div class="field"><label>Active open-field plots (walk-round)</label><input type="text" id="st_plots" value="${esc(S.activePlots)}" placeholder="e.g. OF-03"></div>
+    <div class="field"><label>Staff (comma separated)</label><textarea id="st_staff">${esc(S.staff)}</textarea></div>
+    <div class="sect-note">${esc(storageLine)} External Contractor and Other are always listed.</div>
+    <button class="btn btn-add" id="st_save">Save settings</button><div class="gap"></div>
+    <button class="btn btn-plain" id="st_test">Test upload connection</button><div class="gap"></div>
+    <button class="btn btn-plain" onclick="closeSheet()">Close</button>`);
+  $("st_vq").value = S.videoQuality; $("st_rule").value = S.mediaRule;
+  const readUI = ()=>Object.assign(S, {uploadUrl:$("st_url").value.trim(), farmKey:$("st_key").value.trim(), wifiOnly:$("st_wifi").checked,
+    videoQuality:$("st_vq").value, mediaRule:$("st_rule").value, activePlots:$("st_plots").value, staff:$("st_staff").value});
+  $("st_save").onclick = ()=>{
+    readUI(); writeSettings(); L.staff = staffList(); fillStaff(); renderStaffChips(); renderAll();
+    closeSheet(); toast("Settings saved"); Sync.lastError=""; Sync.run(); updateSyncBar();
+  };
+  $("st_test").onclick = async ()=>{
+    readUI();
+    if(!S.uploadUrl || !S.farmKey){ toast("Enter the upload link and farm key first"); return; }
+    if(!navigator.onLine){ toast("No internet right now"); return; }
+    try{ const r = await post({action:"ping", key:S.farmKey}); toast(r.ok ? "Connected ✓" : (r.error||"Not connected")); }
+    catch(e){ toast("Couldn't reach the upload link"); }
+  };
+}
+</script>
+
 <script>
 /* ================= PDF extraction ================= */
 const NGN = n => "NGN " + (Number(n)||0).toLocaleString("en-NG");
@@ -600,6 +1550,7 @@ async function makePdf(){
   const GREEN=[30,86,49], ORANGE=[232,89,12], INK=[28,27,24], MUTE=[110,108,100], LINE=[227,225,216];
   const W = doc.internal.pageSize.getWidth(), M = 14;
   let y = 0;
+  toast("Building PDF…");
 
   // Header band
   doc.setFillColor(...GREEN); doc.rect(0,0,W,30,"F");
@@ -615,7 +1566,7 @@ async function makePdf(){
 
   // KPI strip
   y = 38;
-  const kpis = [["HARVEST", t.kg+" kg"],["HARVEST VALUE", NGN(t.val)],["LABOUR", t.hrs+" hrs"],["STATUS", (s.status||"—").replace(/^\d\s-\s/,"")]];
+  const kpis = [["HARVEST", t.kg+" kg"],["HARVEST VALUE", NGN(t.val)],["ACTIVITY HOURS", t.hrs+" hrs"],["STATUS", (s.status||"—").replace(/^\d\s-\s/,"")]];
   const bw = (W-2*M-9)/4;
   kpis.forEach((k,i)=>{
     const x = M + i*(bw+3);
@@ -645,7 +1596,7 @@ async function makePdf(){
     ["activity","ACTIVITY LOG", ["Activity","Locations","Staff","Time","Hrs","Status","Notes"],
       e=>[e.type, e.locations, e.staff, (e.start&&e.end? e.start+"–"+e.end:""), String(aDur(e)), e.status, [e.desc,e.notes].filter(Boolean).join(" · ")], null],
     ["welfare","PLANT WELFARE", ["Location","Crop / stage","Vigor","Observed","Severity","Action taken","Follow-up"],
-      e=>[e.location, [e.crop,e.stage].filter(Boolean).join(" · "), e.vigor, e.pest, e.severity, e.action, e.followup], null],
+      e=>[e.location, [e.crop,e.stage].filter(Boolean).join(" · "), e.vigor, e.pest+(e.resolved?" (resolved)":""), e.severity, e.action, e.followup], null],
     ["inputs","INPUTS APPLIED", ["Product","Type","Rate","Locations","Vol","PHI","Safe from"],
       e=>[e.product+(e.ai?"\n("+e.ai+")":""), e.type, e.rate, e.locations, e.volume, e.phi?e.phi+"d":"", safeDate(currentDate,e.phi)], null],
     ["losses","LOSSES", ["Location","Crop","Cause","Qty","Value lost","Description","Action"],
@@ -660,6 +1611,9 @@ async function makePdf(){
     y = sectionTable(doc, y, title+"  ("+report[sec].length+")", head, report[sec].map(mapper), GREEN, LINE, false, foot?foot():null);
   }
 
+  // Photo pages after the existing tables: walk-round grid, entry photos by section, video index.
+  await mediaPages(doc, {GREEN, ORANGE, INK, MUTE, LINE, W, M});
+
   // Footer on every page
   const pages = doc.getNumberOfPages();
   for(let p=1;p<=pages;p++){
@@ -673,6 +1627,7 @@ async function makePdf(){
 
   const fname = "DouValue_Daily_Report_"+currentDate+".pdf";
   const blob = doc.output("blob");
+  await queuePdf(blob);
   // Try native share (WhatsApp / email) first on mobile
   if(navigator.canShare && navigator.canShare({files:[new File([blob],fname,{type:"application/pdf"})]})){
     try {
@@ -682,6 +1637,108 @@ async function makePdf(){
   }
   doc.save(fname);
   toast("PDF downloaded");
+}
+
+// Each extract is kept as a new version (v1, v2…) and joins the upload queue.
+async function queuePdf(blob){
+  try{
+    const v = (report.pdfs||[]).reduce((n,p)=>Math.max(n,p.v||0),0) + 1, id = `${currentDate}_pdf_v${v}`, at = new Date().toISOString();
+    await DB.add({id, date:currentDate, kind:"pdf", section:"report", role:"pdf", version:v, mime:"application/pdf", size:blob.size,
+      capturedAt:at, gps:null, uploaded:false, attempts:0, attached:true, createdAt:at}, {blob, thumb:null});
+    report.pdfs.push({v, id, at}); await saveDay(true);
+  }catch(e){ console.error("PDF not queued", e); }
+}
+
+async function imgData(id, edge){
+  try{
+    const m = await DB.meta(id), b = await DB.blobs(id); if(!m || !b) return null;
+    const src = m.kind==="photo" ? (edge<=360 && b.thumb ? b.thumb : b.blob) : b.thumb; if(!src) return null;
+    const bmp = await createImageBitmap(src), k = Math.min(1, edge/Math.max(bmp.width,bmp.height));
+    const c = document.createElement("canvas"); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return {url:c.toDataURL("image/jpeg",0.72), w:c.width, h:c.height, m};
+  }catch(e){ return null; }
+}
+function fitBox(w, h, maxW, maxH){ const k=Math.min(maxW/w, maxH/h); return [w*k, h*k]; }
+
+async function mediaPages(doc, C){
+  const {GREEN, MUTE, LINE, W, M} = C, H = doc.internal.pageSize.getHeight();
+  const head = (title, y)=>{ doc.setFillColor(...GREEN); doc.rect(M, y, 2.2, 5, "F"); doc.setTextColor(...GREEN); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.text(title, M+5, y+4); return y+8; };
+  const metas = {}; (await DB.byDate(currentDate).catch(()=>[])).forEach(m=>metas[m.id]=m);
+  const anyRound = ROUNDS.some(r=>report.walkround[r.k] && report.walkround[r.k].start);
+
+  // 1. Walk-round grid: zones down, rounds across, thumbnail + time + OK/Watch/Problem. Missed zones are empty cells.
+  if(anyRound){
+    doc.addPage(); let y = head("WALK-ROUND", 16);
+    const zones = []; ROUNDS.forEach(r=>zonesOf(r.k).forEach(z=>{ if(!zones.includes(z)) zones.push(z); }));
+    const imgs = {};
+    for(const r of ROUNDS){ const st=report.walkround[r.k]; if(!st) continue;
+      for(const z of zonesOf(r.k)){ const d=(st.zones||{})[z]; if(d && d.photo) imgs[r.k+"|"+z] = await imgData(d.photo, 420); } }
+    const cellText = (r, z)=>{
+      const st = report.walkround[r.k]; if(!zonesOf(r.k).includes(z)) return "n/a";
+      if(!st || !st.start) return ""; const d = (st.zones||{})[z]; if(!d || (!d.photo && !d.status)) return "";
+      return [d.status||"—", d.at||"", d.video?"+ video":""].filter(Boolean).join("  ");
+    };
+    doc.autoTable({
+      startY:y, margin:{left:M,right:M}, theme:"grid",
+      head:[["Zone", ...ROUNDS.map(r=>`${r.label} ${r.from}–${r.to}\n${roundSummary(r.k)}`)]],
+      body: zones.map(z=>[z, ...ROUNDS.map(r=>cellText(r,z))]),
+      styles:{font:"helvetica", fontSize:7.5, cellPadding:1.5, lineColor:LINE, lineWidth:0.15, textColor:[28,27,24], valign:"bottom", minCellHeight:36},
+      headStyles:{fillColor:[241,246,240], textColor:GREEN, fontStyle:"bold", fontSize:7.5, valign:"middle", minCellHeight:10},
+      columnStyles:{0:{cellWidth:26, fontStyle:"bold", valign:"middle"}},
+      didParseCell:d=>{ if(d.section!=="body"||d.column.index===0) return; const v=String(d.cell.raw||"");
+        if(v.startsWith("Problem")) d.cell.styles.textColor=[176,51,30]; else if(v.startsWith("Watch")) d.cell.styles.textColor=[183,121,31];
+        if(v==="n/a") d.cell.styles.textColor=MUTE; d.cell.styles.fontStyle = v.startsWith("Problem")?"bold":"normal"; },
+      didDrawCell:d=>{ if(d.section!=="body"||d.column.index===0) return;
+        const im = imgs[ROUNDS[d.column.index-1].k+"|"+d.row.raw[0]]; if(!im) return;
+        const c=d.cell, [w,h]=fitBox(im.w, im.h, c.width-3, c.height-8);
+        doc.addImage(im.url, "JPEG", c.x+(c.width-w)/2, c.y+1.5, w, h); }
+    });
+  }
+
+  // 2. Entry photos grouped by section, each labelled with its entry ("Inputs 4 — Velum Prime, GH-01").
+  const groups = [];
+  SECTIONS.forEach(sec=>{
+    const items = [];
+    report[sec].forEach((e,i)=>MEDIA[sec].forEach(slot=>{ const id=(e.media||{})[slot.role]; if(id && metas[id] && metas[id].kind==="photo")
+      items.push({id, label:`${SECNAME[sec]} ${i+1} — ${shortLabel(sec,e)}`, sub:slot.label}); }));
+    if(sec==="welfare") (report.carried||[]).forEach(c=>{ if(c.photo) items.push({id:c.photo, label:`Follow-up — ${c.location} · ${c.pest||"issue"}`, sub:`Open since ${c.since}${c.resolved?" · resolved today":""}`}); });
+    if(items.length) groups.push({title:SECNAME[sec].toUpperCase()+" PHOTOS", items});
+  });
+  if(groups.length){
+    doc.addPage(); let y = 16;
+    const cols=3, gap=4, cw=(W-2*M-gap*(cols-1))/cols, ih=cw*0.75, ch=ih+11;
+    for(const g of groups){
+      if(y + 8 + ch > H-16){ doc.addPage(); y = 16; }
+      y = head(g.title+"  ("+g.items.length+")", y);
+      let col = 0;
+      for(const it of g.items){
+        if(col===0 && y + ch > H-16){ doc.addPage(); y = 16; }
+        const x = M + col*(cw+gap), im = await imgData(it.id, 720);
+        doc.setDrawColor(...LINE); doc.setFillColor(245,245,240); doc.rect(x, y, cw, ih, "FD");
+        if(im){ const [w,h]=fitBox(im.w, im.h, cw, ih); doc.addImage(im.url, "JPEG", x+(cw-w)/2, y+(ih-h)/2, w, h); }
+        doc.setTextColor(28,27,24); doc.setFont("helvetica","bold"); doc.setFontSize(7);
+        doc.text(doc.splitTextToSize(it.label, cw)[0], x, y+ih+3.5);
+        doc.setFont("helvetica","normal"); doc.setTextColor(...MUTE);
+        doc.text(doc.splitTextToSize(it.sub + (im ? "  ·  " + stampText(im.m) : ""), cw).slice(0,2), x, y+ih+7);
+        col++; if(col===cols){ col=0; y += ch + 3; }
+      }
+      if(col) y += ch + 3;
+      y += 2;
+    }
+  }
+
+  // 3. Video index: a PDF cannot play video, so list each clip with its file name.
+  const vids = [];
+  ROUNDS.forEach(r=>{ const st=report.walkround[r.k]; if(!st) return; zonesOf(r.k).forEach(z=>{ const d=(st.zones||{})[z]; if(d && d.video && metas[d.video]) vids.push([metas[d.video], `Walk-round ${r.label}`]); }); });
+  SECTIONS.forEach(sec=>report[sec].forEach((e,i)=>Object.entries(e.media||{}).forEach(([role,id])=>{ const m=metas[id];
+    if(m && m.kind==="video" && m.section!=="walkround") vids.push([m, `${SECNAME[sec]} ${i+1} — ${shortLabel(sec,e)}`]); })));
+  if(vids.length){
+    doc.addPage();
+    sectionTable(doc, 16, "VIDEO INDEX  ("+vids.length+")", ["File name","Zone","Round / entry","Time","Length","Size"],
+      vids.map(([m,where])=>[mediaFileName(m, report), m.zone||"", where, m.capturedAt?new Date(m.capturedAt).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"",
+        m.duration?m.duration+" s":"", (m.size/1024/1024).toFixed(1)+" MB"]), GREEN, LINE, false);
+  }
 }
 
 function sectionTable(doc, y, title, head, body, GREEN, LINE, isSummary, foot){
@@ -709,6 +1766,8 @@ function printFallback(){
   const t=totals(); const s=report.summary;
   const esc = x => String(x??"").replace(/</g,"&lt;");
   const tbl = (title, head, rows) => rows.length ? `<h2>${title} (${rows.length})</h2><table><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table>` : "";
+  const wrRows = [];
+  ROUNDS.forEach(r=>{ const st=report.walkround[r.k]; if(st && st.start) zonesOf(r.k).forEach(z=>{ const d=(st.zones||{})[z]||{}; wrRows.push([r.label, z, d.status||"missed", d.at||"", d.photo?"yes":"", d.video?"yes":""]); }); });
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>DouValue Daily Report ${currentDate}</title><style>
     body{font-family:Arial,Helvetica,sans-serif;color:#1C1B18;margin:24px;font-size:12px}
     .band{background:#1E5631;color:#fff;padding:14px 16px;border-radius:6px;display:flex;justify-content:space-between;align-items:center}
@@ -720,7 +1779,7 @@ function printFallback(){
     th{background:#F1F6F0;color:#1E5631;font-size:10px} .foot{margin-top:20px;color:#6E6C64;font-size:10px;border-top:1px solid #E3E1D8;padding-top:6px}
   </style></head><body>
   <div class="band"><h1>DOUVALUE FARMS · Daily Field Report</h1><div class="d"><b>${fmtDate(currentDate)}</b><br>Prepared by ${esc(s.preparedBy||"—")}${s.reviewedBy?" · Reviewed by "+esc(s.reviewedBy):""}</div></div>
-  <div class="kpis"><div><b>${t.kg} kg</b><span>Harvest</span></div><div><b>${naira(t.val)}</b><span>Harvest value</span></div><div><b>${t.hrs} hrs</b><span>Labour</span></div><div><b>${esc(s.status||"—")}</b><span>Day status</span></div></div>
+  <div class="kpis"><div><b>${t.kg} kg</b><span>Harvest</span></div><div><b>${naira(t.val)}</b><span>Harvest value</span></div><div><b>${t.hrs} hrs</b><span>Activity hours</span></div><div><b>${esc(s.status||"—")}</b><span>Day status</span></div></div>
   <h2>Daily Summary</h2><table>
     <tr><th style="width:160px">Weather</th><td>${esc(s.weather||"—")} ${s.tHigh||s.tLow?`(${s.tHigh||"?"}°C / ${s.tLow||"?"}°C)`:""}</td></tr>
     <tr><th>All zones normal</th><td>${s.allNormal==="Y"?"Yes":s.allNormal==="N"?"No — see Plant Welfare":"—"}</td></tr>
@@ -736,6 +1795,7 @@ function printFallback(){
   ${tbl("Losses",["Location","Crop","Cause","Qty","Value lost","Description","Action"], report.losses.map(e=>[e.location,e.crop,e.cause,e.qty,naira(e.value),e.desc,e.action]))}
   ${tbl("Requisitions",["Item","Type","Qty","Priority","Needed by","Est. cost","Requested by"], report.requisitions.map(e=>[e.item,e.type,[e.qty,e.unit].filter(Boolean).join(" "),e.priority,e.neededBy,naira(e.cost),e.requestedBy]))}
   ${tbl("Defects & Issues",["Type","Location","Description","Priority","Status","Action / assigned","Target"], report.defects.map(e=>[e.type,e.location,e.desc,e.priority,e.status,[e.action,e.assigned].filter(Boolean).join(" · "),e.target]))}
+  ${tbl("Walk-round",["Round","Zone","Status","Time","Photo","Video"], wrRows)}
   <div class="foot">DouValue Farms Ltd · Port Harcourt, Rivers State · Generated ${new Date().toLocaleString("en-GB")}</div>
   <script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`;
   const w = window.open("","_blank");
@@ -745,7 +1805,11 @@ function printFallback(){
 }
 
 /* ================= Init ================= */
-loadDay(currentDate);
+renderStaffChips();
+placeTabs();
+loadDay(currentDate).then(()=>{ startupChecks(); Sync.run(); });
+if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
 </html>

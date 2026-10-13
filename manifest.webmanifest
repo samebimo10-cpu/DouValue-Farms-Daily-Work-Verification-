@@ -1,0 +1,11 @@
+{
+  "name": "DouValue Farms — Daily Field Report",
+  "short_name": "DouValue Report",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F5F0",
+  "theme_color": "#1E5631",
+  "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}]
+}
