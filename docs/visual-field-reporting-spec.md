@@ -90,7 +90,7 @@ At 360p video the daily total falls to about 30–40 MB, at some loss of detail.
 
 Workers move between several jobs in a day, so the same person appearing in overlapping activities within working hours is normal and is not flagged.
 
-- **Staff list updated** to the current team: Onyinyechi, Holi, Prosper, John, Felix, Wisdom, plus External Contractor and Other. Godstime, Tossy and Elijah stay only if still on the team.
+- **Staff list updated** to the current team: Onyinyechi, Holi, Prosper, John, Felix, Wisdom, plus External Contractor and Other. Godstime, Tossy and Elijah have left and are not listed.
 - **Tap-to-add names:** the Activities Staff field keeps its text box, with name buttons above it so names are tapped instead of typed. This keeps spelling consistent across days.
 - **"Labour" becomes "Activity hours":** the app adds each activity's duration × number of staff, so a person on two overlapping jobs counts twice. The 23.6 hrs on 13 October is activity time, not hours paid. The calculation stays; only the label changes so it isn't read as payroll.
 
@@ -207,7 +207,7 @@ The manager needs one 30-minute walk-through of the Walk-round tab and the photo
 - [ ] Delivery: online review page (B) chosen on 13 October
 - [ ] Confirm walk-round times: 06:15, 12:30, 17:30
 - [ ] Video quality: 480p (clearer) or 360p (half the data)
-- [ ] Which staff are current: Godstime, Tossy, Elijah
+- [x] Which staff are current: Godstime, Tossy and Elijah have left (decided 14 October)
 - [ ] Which open-field plots are active besides OF-03
 - [ ] Manager's phone model and free storage
 
