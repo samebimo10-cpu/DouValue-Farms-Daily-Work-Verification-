@@ -1411,7 +1411,7 @@ async function uploadMedia(m0){
 }
 const Sync = {
   busy:false, wait:0, timer:null, soon:null, lastError:"",
-  kickSoon(){ clearTimeout(this.soon); this.soon = setTimeout(()=>this.run(), 1500); },
+  kickSoon(){ clearTimeout(this.soon); this.soon = setTimeout(()=>this.run(), 1500); updateSyncBar(); },
   async run(){
     if(this.busy) return; this.busy = true; clearTimeout(this.timer);
     try{

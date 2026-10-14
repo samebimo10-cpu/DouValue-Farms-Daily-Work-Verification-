@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DouValue Field Reports</title>
+<style>
+:root{
+  --leaf:#1E5631; --leaf-dark:#153F24; --habanero:#E8590C; --habanero-dark:#C6480A;
+  --paper:#F6F5F0; --card:#FFFFFF; --ink:#1C1B18; --muted:#6E6C64; --line:#E3E1D8;
+  --good:#2B7A3F; --warn:#B7791F; --bad:#B0331E; --soft:#F1F6F0;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+[hidden]{display:none !important;}
+body{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background:var(--paper); color:var(--ink); font-size:15px;}
+.num{font-variant-numeric:tabular-nums;}
+a{color:var(--leaf);}
+button{font-family:inherit;}
+.wrap{max-width:1100px; margin:0 auto; padding:0 16px;}
+.top{background:var(--leaf); color:#fff; position:sticky; top:0; z-index:20; box-shadow:0 2px 8px rgba(20,50,30,.25);}
+.top .wrap{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:58px;}
+.brand{font-weight:800; letter-spacing:.4px; text-transform:uppercase; font-size:1rem; cursor:pointer;}
+.brand small{display:block; font-weight:500; font-size:.66rem; letter-spacing:1.5px; opacity:.75;}
+.top nav{display:flex; gap:6px;}
+.top nav button{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.28); color:#fff; border-radius:8px; padding:8px 12px; font-weight:700; font-size:.85rem; cursor:pointer;}
+.top nav button.on{background:#fff; color:var(--leaf);}
+main{padding:16px 0 60px;}
+h1{font-size:1.25rem; margin-bottom:4px;}
+h2{font-size:1rem; font-weight:800; margin:22px 0 10px; display:flex; align-items:center; gap:8px;}
+h2::before{content:""; width:5px; height:18px; background:var(--habanero); border-radius:3px;}
+.muted{color:var(--muted);}
+.small{font-size:.8rem;}
+.card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px;}
+.row{display:flex; flex-wrap:wrap; gap:10px; align-items:end;}
+label.f{display:flex; flex-direction:column; gap:4px; font-size:.7rem; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--muted);}
+select, input[type=date]{border:1.5px solid var(--line); border-radius:8px; background:#FCFCFA; padding:8px 10px; font-size:.92rem; font-family:inherit; color:var(--ink); min-height:40px;}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; border-radius:9px; font-weight:800; cursor:pointer; min-height:40px; padding:8px 14px; font-size:.88rem; text-decoration:none;}
+.btn-g{background:var(--leaf); color:#fff;} .btn-o{background:var(--habanero); color:#fff;}
+.btn-l{background:#fff; color:var(--ink); border:1.5px solid var(--line);}
+.btn:disabled{opacity:.5; cursor:default;}
+.meter{height:8px; background:var(--line); border-radius:99px; overflow:hidden; margin-top:6px;}
+.meter i{display:block; height:100%; background:var(--leaf);}
+.meter.warn i{background:var(--bad);}
+.banner{background:#FFF4E5; border:1px solid #F3C99B; color:#7A3E06; border-radius:10px; padding:10px 12px; font-size:.85rem; margin-top:10px;}
+/* days list */
+.days{display:flex; flex-direction:column; gap:8px;}
+.day{display:grid; grid-template-columns:150px 1fr auto; gap:12px; align-items:center; background:var(--card); border:1px solid var(--line); border-left:4px solid var(--leaf); border-radius:10px; padding:12px 14px; cursor:pointer; text-align:left; width:100%; font-size:.9rem; color:var(--ink);}
+.day:hover{border-color:#cfd8cc;}
+.day.problem{border-left-color:var(--bad);}
+.day .d b{display:block; font-size:.95rem;} .day .d span{font-size:.75rem; color:var(--muted);}
+.stats{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:.84rem;}
+.stats b{font-weight:800;}
+.pill{display:inline-block; border-radius:99px; padding:4px 10px; font-size:.72rem; font-weight:800; white-space:nowrap;}
+.pill.ok{background:#E3F1E6; color:var(--good);} .pill.up{background:#FFF1E2; color:var(--habanero-dark);} .pill.np{background:#EEE; color:var(--muted);}
+.redmark{display:inline-block; width:10px; height:10px; background:var(--bad); border-radius:50%; margin-right:6px; vertical-align:1px;}
+@media (max-width:640px){ .day{grid-template-columns:1fr; gap:6px;} }
+/* day view */
+.kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0;}
+.kpi{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px;}
+.kpi span{display:block; font-size:.65rem; letter-spacing:1px; text-transform:uppercase; color:var(--muted); font-weight:700;}
+.kpi b{font-size:1.1rem;}
+@media (max-width:640px){ .kpis{grid-template-columns:repeat(2,1fr);} }
+.grid-scroll{overflow-x:auto;}
+table.wr{border-collapse:separate; border-spacing:6px; min-width:620px; width:100%;}
+table.wr th{font-size:.75rem; text-align:left; color:var(--leaf); padding:4px;}
+table.wr th small{display:block; color:var(--muted); font-weight:600;}
+table.wr td{vertical-align:top; width:30%;}
+table.wr td.z{width:10%; font-weight:800; font-size:.85rem; padding-top:8px;}
+.cell{background:var(--card); border:1px solid var(--line); border-radius:8px; overflow:hidden; min-height:60px;}
+.cell.empty{display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.75rem; min-height:110px; background:#FAFAF7; border-style:dashed;}
+.cell .cap{display:flex; justify-content:space-between; gap:6px; padding:5px 7px; font-size:.75rem;}
+.st-OK{color:var(--good); font-weight:800;} .st-Watch{color:var(--warn); font-weight:800;} .st-Problem{color:var(--bad); font-weight:800;}
+.thumb{position:relative; display:block; width:100%; aspect-ratio:4/3; background:#e9e8e2; border:none; cursor:pointer; padding:0; overflow:hidden;}
+.thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+.thumb .play{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.6rem; color:#fff; text-shadow:0 1px 5px rgba(0,0,0,.7);}
+.thumb .vbadge{position:absolute; right:6px; bottom:6px; background:rgba(0,0,0,.65); color:#fff; font-size:.68rem; padding:2px 6px; border-radius:6px; font-weight:700;}
+.entry{background:var(--card); border:1px solid var(--line); border-left:4px solid var(--leaf); border-radius:10px; padding:12px 14px; margin-bottom:8px;}
+.entry .t{display:flex; justify-content:space-between; gap:10px; font-weight:800;}
+.entry .t span:last-child{color:var(--habanero-dark); white-space:nowrap;}
+.entry .s{font-size:.84rem; color:var(--muted); margin-top:3px; line-height:1.45;}
+.media{display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:8px; margin-top:10px;}
+.m{background:#FAFAF7; border:1px solid var(--line); border-radius:8px; overflow:hidden; position:relative;}
+.m figcaption{font-size:.7rem; color:var(--muted); padding:5px 7px; line-height:1.35;}
+.m figcaption b{color:var(--ink); display:block; font-size:.72rem;}
+.m .sel{position:absolute; top:6px; left:6px; z-index:2; background:rgba(255,255,255,.9); border-radius:6px; padding:3px 4px; display:flex;}
+.m .sel input{width:18px; height:18px;}
+.m.pending{display:flex; align-items:center; justify-content:center; min-height:120px; font-size:.75rem; color:var(--muted); border-style:dashed;}
+.selbar{position:sticky; bottom:12px; margin-top:18px; background:var(--ink); color:#fff; border-radius:12px; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; z-index:10;}
+/* zone timeline */
+.strip{display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:8px;}
+.strip .frame{flex:0 0 min(82vw,420px); scroll-snap-align:start; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+.strip .frame .cap{padding:7px 10px; font-size:.8rem; display:flex; justify-content:space-between;}
+.compare{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+.compare .pane{background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+.compare img{width:100%; display:block;}
+.compare .cap{padding:7px 10px; font-size:.8rem;}
+/* lightbox */
+.lb{position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:50; display:flex; flex-direction:column;}
+.lb .bar{display:flex; align-items:center; gap:10px; padding:10px 14px; color:#fff; font-size:.85rem;}
+.lb .bar .t{flex:1; line-height:1.4;}
+.lb .body{flex:1; display:flex; align-items:center; justify-content:center; padding:8px; overflow:auto;}
+.lb img{max-width:100%; max-height:100%;}
+.lb iframe{width:min(100%,960px); height:min(100%,640px); border:0; background:#000;}
+.lb .x{background:rgba(255,255,255,.15); border:none; color:#fff; width:40px; height:40px; border-radius:50%; font-size:1rem; cursor:pointer;}
+.spin{padding:40px; text-align:center; color:var(--muted);}
+.err{color:var(--bad); padding:20px 0;}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand" data-go="days">DouValue Farms<small>Field report review</small></div>
+  <nav><button data-go="days" id="navDays">Days</button><button data-go="zone" id="navZone">Zone timeline</button></nav>
+</div></header>
+<main class="wrap" id="view"><div class="spin">Loading…</div></main>
+<div class="lb" id="lb" hidden>
+  <div class="bar"><div class="t" id="lbT"></div><a class="btn btn-l" id="lbDl" target="_blank" rel="noopener">Download</a><a class="btn btn-l" id="lbOpen" target="_blank" rel="noopener">Open in Drive</a><button class="x" id="lbX" aria-label="Close">✕</button></div>
+  <div class="body" id="lbBody"></div>
+</div>
+<script>
+/* ---------- server calls ---------- */
+const api = (fn, ...a) => new Promise((res, rej) => {
+  if (window.google && google.script && google.script.run) google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...a);
+  else if (window.MOCK_API) Promise.resolve().then(() => window.MOCK_API[fn](...a)).then(res, rej);
+  else rej(new Error("Not running inside Apps Script"));
+});
+const $ = id => document.getElementById(id);
+const esc = x => String(x ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const naira = n => "₦" + (Number(n)||0).toLocaleString("en-NG");
+const fmtDay = d => new Date(d+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short", day:"numeric", month:"short", year:"numeric"});
+const fmtLong = d => new Date(d+"T00:00:00").toLocaleDateString("en-GB",{weekday:"long", day:"numeric", month:"long", year:"numeric"});
+const hm = iso => iso ? new Date(iso).toLocaleTimeString("en-GB",{hour:"2-digit", minute:"2-digit"}) : "";
+const gb = b => (b/1024/1024/1024).toFixed(1) + " GB";
+const dlUrl = id => "https://drive.google.com/uc?export=download&id=" + encodeURIComponent(id);
+const viewUrl = id => "https://drive.google.com/file/d/" + encodeURIComponent(id) + "/view";
+const SECTIONS = [["harvest","Harvest"],["activity","Activities"],["welfare","Plant Welfare"],["inputs","Inputs Applied"],["losses","Losses"],["requisitions","Requisitions"],["defects","Defects & Issues"]];
+const STD_ZONES = ["Gate & Perimeter","GH-01","GH-02","GH-03","GH-04","GH-05","OF-03","Nursery","Water System","Store"];
+
+/* ---------- thumbnails load lazily, 30 at a time ---------- */
+const thumbCache = {}; let thumbQueue = [], thumbBusy = false;
+function hydrate(root){
+  root.querySelectorAll("img[data-thumb]").forEach(img=>{
+    const id = img.dataset.thumb; if(!id) return;
+    if(thumbCache[id] !== undefined){ if(thumbCache[id]) img.src = thumbCache[id]; return; }
+    if(!thumbQueue.includes(id)) thumbQueue.push(id);
+  });
+  pumpThumbs();
+}
+async function pumpThumbs(){
+  if(thumbBusy || !thumbQueue.length) return; thumbBusy = true;
+  const batch = thumbQueue.splice(0, 30);
+  try{ Object.assign(thumbCache, await api("apiThumbs", batch)); }catch(e){ batch.forEach(id=>thumbCache[id]=""); }
+  document.querySelectorAll("img[data-thumb]").forEach(img=>{ const u=thumbCache[img.dataset.thumb]; if(u && img.src!==u) img.src=u; });
+  thumbBusy = false; pumpThumbs();
+}
+
+/* ---------- navigation ---------- */
+let state = {v:"days"};
+function go(v, arg, push=true){
+  state = {v, arg};
+  $("navDays").classList.toggle("on", v==="days"); $("navZone").classList.toggle("on", v==="zone");
+  if(push && window.google && google.script && google.script.history) google.script.history.push(state, null, v + (arg?"/"+arg:""));
+  window.scrollTo(0,0);
+  if(v==="day") return showDay(arg);
+  if(v==="zone") return showZone(arg || "GH-01");
+  return showDays();
+}
+document.addEventListener("click", e=>{ const g=e.target.closest("[data-go]"); if(g){ e.preventDefault(); go(g.dataset.go, g.dataset.arg); } });
+function loading(){ $("view").innerHTML = `<div class="spin">Loading…</div>`; }
+function fail(e){ $("view").innerHTML = `<div class="err">${esc(e && e.message || e)}</div>`; }
+
+/* ---------- days list ---------- */
+let DAYS = null, filt = {month:"", zone:"", problems:false};
+async function showDays(){
+  loading();
+  try{ DAYS = await api("apiDays"); }catch(e){ return fail(e); }
+  renderDays();
+}
+function renderDays(){
+  const {days, storage, sheetUrl} = DAYS;
+  const months = [...new Set(days.map(d=>d.date.slice(0,7)))];
+  const zones = [...new Set([...STD_ZONES, ...days.flatMap(d=>d.zonesFlagged.split(/\s*,\s*/).filter(Boolean))])];
+  const pct = storage.limit ? storage.used/storage.limit*100 : 0;
+  const list = days.filter(d=>(!filt.month || d.date.startsWith(filt.month)) && (!filt.zone || d.zonesFlagged.split(/\s*,\s*/).includes(filt.zone)) && (!filt.problems || d.problem));
+  const upState = d => !d.expected ? `<span class="pill np">No media</span>`
+    : d.uploaded >= d.expected ? (d.hasPdf ? `<span class="pill ok">Complete</span>` : `<span class="pill np">PDF not yet extracted</span>`)
+    : `<span class="pill up">Uploading ${d.uploaded}/${d.expected}</span>`;
+  $("view").innerHTML = `
+    <h1>Daily field reports</h1><div class="muted small">Signed in as ${esc(DAYS.me||"")}</div>
+    <div class="card" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between">
+        <div style="flex:1;min-width:220px"><b>Storage</b> <span class="muted small">${storage.limit?`${gb(storage.used)} of ${gb(storage.limit)} (${pct.toFixed(0)}%)`:"not measured yet"}</span>
+          <div class="meter ${pct>=80?"warn":""}"><i style="width:${Math.min(100,pct)}%"></i></div></div>
+        <a class="btn btn-l" href="${esc(sheetUrl)}" target="_blank" rel="noopener">Open index sheet</a>
+      </div>
+      ${pct>=80?`<div class="banner">Storage is ${pct.toFixed(0)}% full. Use Export to download older days, keep them safe off Drive, then delete those day folders to free space.</div>`:""}
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="row">
+        <label class="f">Month<select id="fMonth"><option value="">All months</option>${months.map(m=>`<option value="${m}">${new Date(m+"-01T00:00:00").toLocaleDateString("en-GB",{month:"long",year:"numeric"})}</option>`).join("")}</select></label>
+        <label class="f">Zone<select id="fZone"><option value="">All zones</option>${zones.map(z=>`<option>${esc(z)}</option>`).join("")}</select></label>
+        <label class="f" style="flex-direction:row;align-items:center;gap:6px;min-height:40px"><input type="checkbox" id="fProb"> Days with problems</label>
+        <span style="flex:1"></span>
+        <label class="f">Export from<input type="date" id="exS"></label>
+        <label class="f">to<input type="date" id="exE"></label>
+        <button class="btn btn-o" id="exGo">Export</button>
+      </div>
+      <div id="exOut" class="small" style="margin-top:8px"></div>
+    </div>
+    <h2>${list.length} day${list.length===1?"":"s"}</h2>
+    <div class="days">${list.map(d=>`
+      <button class="day ${d.problem?"problem":""}" data-go="day" data-arg="${d.date}">
+        <div class="d"><b>${d.problem?'<span class="redmark" title="Problem zone or serious issue"></span>':""}${fmtDay(d.date)}</b><span>${esc(d.preparedBy||"")}${d.weather?" · "+esc(d.weather):""}</span></div>
+        <div class="stats"><span><b class="num">${d.harvestKg}</b> kg</span><span><b class="num">${d.activityHours}</b> activity hrs</span><span><b class="num">${d.openIssues}</b> open issues</span><span>${esc(String(d.status||"").replace(/^\d\s-\s/,""))}</span></div>
+        <div>${upState(d)}</div>
+      </button>`).join("") || `<div class="muted">No days match.</div>`}</div>`;
+  $("fMonth").value = filt.month; $("fZone").value = filt.zone; $("fProb").checked = filt.problems;
+  $("fMonth").onchange = e=>{ filt.month=e.target.value; renderDays(); };
+  $("fZone").onchange = e=>{ filt.zone=e.target.value; renderDays(); };
+  $("fProb").onchange = e=>{ filt.problems=e.target.checked; renderDays(); };
+  if(days.length){ $("exS").value = days[days.length-1].date; $("exE").value = days[0].date; }
+  $("exGo").onclick = async ()=>{
+    const s=$("exS").value, e=$("exE").value; if(!s||!e||s>e){ $("exOut").textContent="Pick a start and end date."; return; }
+    $("exGo").disabled = true; $("exOut").textContent = "Preparing… (PDFs plus a spreadsheet of all entries)";
+    try{ const r = await api("apiExport", s, e);
+      $("exOut").innerHTML = `Ready: <a href="${esc(r.url)}" target="_blank" rel="noopener"><b>Download ${esc(r.name)}</b></a> — ${r.dayCount} days, ${r.pdfCount} PDFs + entries spreadsheet. Also saved in “DouValue exports” in your Drive.`; }
+    catch(err){ $("exOut").innerHTML = `<span class="err">${esc(err.message||err)}</span>`; }
+    $("exGo").disabled = false;
+  };
+}
+
+/* ---------- one day ---------- */
+let DAY = null, selected = new Set();
+async function showDay(date){
+  loading(); selected = new Set();
+  try{ DAY = await api("apiDay", date); }catch(e){ return fail(e); }
+  const r = DAY.report, F = DAY.files;
+  if(!r){ $("view").innerHTML = `<button class="btn btn-l" data-go="days">← Days</button><div class="err">The report data for ${esc(date)} could not be read.</div>`; return; }
+  const s = r.summary||{}, t = r._totals||{};
+  const pdfs = Object.values(F).filter(f=>f.type==="pdf").sort((a,b)=>Number(b.version)-Number(a.version));
+  const media = (id, label) => {
+    const f = F[id];
+    if(!f) return `<figure class="m pending">Not uploaded yet</figure>`;
+    const gps = f.lat!=="" && f.lat!=null ? `GPS ${Number(f.lat).toFixed(5)}, ${Number(f.lng).toFixed(5)} ±${f.accuracy} m` : "no GPS fix";
+    return `<figure class="m"><label class="sel"><input type="checkbox" data-sel="${esc(f.fileId)}"></label>
+      <button class="thumb" data-open="${esc(id)}"><img data-thumb="${esc(f.thumbId)}" alt="">${f.type==="video"?`<span class="play">▶</span><span class="vbadge">${f.duration?esc(f.duration)+" s":"video"}</span>`:""}</button>
+      <figcaption><b>${esc(label||f.label)}</b>${hm(f.capturedAt)} · ${esc(f.zone)} · ${gps}</figcaption></figure>`;
+  };
+  // Walk-round grid: zones down, rounds across.
+  const rounds = r._rounds || [];
+  const zones = []; rounds.forEach(rd=>rd.zones.forEach(z=>{ if(!zones.includes(z)) zones.push(z); }));
+  const roundSum = rd => { const st=(r.walkround||{})[rd.k]; if(!st||!st.start) return "Not started";
+    const n = rd.zones.filter(z=>{ const d=(st.zones||{})[z]; return d && d.photo && (d.video||!rd.videoReq) && d.status; }).length;
+    return `${n} of ${rd.zones.length} zones, ${st.start}–${st.end||"…"}`; };
+  const cell = (rd, z) => {
+    if(!rd.zones.includes(z)) return `<div class="cell empty">not on this round</div>`;
+    const st = (r.walkround||{})[rd.k], d = st && (st.zones||{})[z];
+    if(!d || (!d.photo && !d.status)) return `<div class="cell empty">${st&&st.start?"missed":"—"}</div>`;
+    const pf = F[d.photo], vf = F[d.video];
+    return `<div class="cell">${pf?`<button class="thumb" data-open="${esc(d.photo)}" data-also="${esc(d.video||"")}"><img data-thumb="${esc(pf.thumbId)}" alt="">${vf?`<span class="vbadge">▶ video</span>`:""}</button>`:`<div class="cell empty" style="border:0;min-height:80px">${d.photo?"photo uploading…":"no photo"}</div>`}
+      <div class="cap"><span class="st-${esc(d.status||"")}">${esc(d.status||"—")}</span><span class="muted">${esc(d.at||"")}${d.video&&!vf?" · video uploading":""}</span></div></div>`;
+  };
+  const sections = SECTIONS.map(([k,name])=>{
+    const list = r[k]||[], titles = (r._titles||{})[k]||[], roles = (r._media||{})[k]||[];
+    const carried = k==="welfare" ? (r.carried||[]) : [];
+    if(!list.length && !carried.length) return "";
+    return `<h2>${name} (${list.length})</h2>` +
+      carried.map(c=>`<div class="entry" style="border-left-color:var(--habanero)"><div class="t"><span>${esc(c.location)} · ${esc(c.pest||"Issue")} — open since ${esc(c.since)}</span><span>${esc(c.severity||"")}</span></div>
+        <div class="s">${c.resolved?"Marked resolved today":"Still open"} · <a href="#" data-go="zone" data-arg="${esc(c.location)}">See this zone over time</a></div>
+        <div class="media">${c.photo?media(c.photo,"Today's follow-up photo"):`<figure class="m pending">No follow-up photo today</figure>`}</div></div>`).join("") +
+      list.map((e,i)=>{ const tt = titles[i]||[]; const ids = Object.entries(e.media||{});
+        return `<div class="entry"><div class="t"><span>${i+1}. ${esc(tt[0]||"")}</span><span>${esc(tt[2]||tt[1]||"")}</span></div><div class="s">${esc(tt[3]||"")}${e.resolved?" · resolved":""}</div>
+          ${ids.length?`<div class="media">${ids.map(([role,id])=>media(id, (roles.find(x=>x.role===role)||{}).label||role)).join("")}</div>`:""}</div>`; }).join("");
+  }).join("");
+  $("view").innerHTML = `
+    <button class="btn btn-l" data-go="days">← Days</button>
+    <div class="row" style="justify-content:space-between;margin-top:12px">
+      <div><h1>${fmtLong(DAY.date)}</h1><div class="muted small">Prepared by ${esc(s.preparedBy||"—")}${s.weather?" · "+esc(s.weather):""}${s.tHigh||s.tLow?` (${esc(s.tHigh||"?")}°C / ${esc(s.tLow||"?")}°C)`:""}${s.reviewedBy?" · Reviewed by "+esc(s.reviewedBy):""}</div></div>
+      <div class="row">
+        ${pdfs.length?`<a class="btn btn-o" href="${viewUrl(pdfs[0].fileId)}" target="_blank" rel="noopener">Open PDF${pdfs.length>1?" v"+esc(pdfs[0].version):""}</a><a class="btn btn-l" href="${dlUrl(pdfs[0].fileId)}" target="_blank" rel="noopener">Download PDF</a>`:`<span class="pill np">PDF not yet extracted</span>`}
+        ${DAY.folderUrl?`<a class="btn btn-l" href="${esc(DAY.folderUrl)}" target="_blank" rel="noopener">Open day folder in Drive</a>`:""}
+      </div>
+    </div>
+    ${pdfs.length>1?`<div class="small muted" style="margin-top:6px">All PDF versions: ${pdfs.map(p=>`<a href="${dlUrl(p.fileId)}" target="_blank" rel="noopener">v${esc(p.version)} (${hm(p.capturedAt)})</a>`).join(" · ")}</div>`:""}
+    <div class="kpis">
+      <div class="kpi"><span>Harvest</span><b class="num">${t.kg??0} kg</b></div>
+      <div class="kpi"><span>Harvest value</span><b class="num" style="color:var(--habanero-dark)">${naira(t.val)}</b></div>
+      <div class="kpi"><span>Activity hours</span><b class="num">${t.hrs??0} hrs</b></div>
+      <div class="kpi"><span>Flags</span><b class="num">${t.flags??0}</b></div>
+    </div>
+    <div class="card"><div class="small">${esc(String(s.status||"").replace(/^\d\s-\s/,""))} · All zones normal: ${s.allNormal==="Y"?"Yes":s.allNormal==="N"?"No":"—"} · Open issues at end of day: ${esc(s.openIssues||"0")}</div>
+      ${s.wins?`<div class="small" style="margin-top:6px"><b>Key wins:</b> ${esc(s.wins)}</div>`:""}${s.issues?`<div class="small" style="margin-top:4px"><b>Key issues / risks:</b> ${esc(s.issues)}</div>`:""}${s.tomorrow?`<div class="small" style="margin-top:4px"><b>Tomorrow:</b> ${esc(s.tomorrow)}</div>`:""}</div>
+    <h2>Walk-round</h2>
+    ${zones.length?`<div class="grid-scroll"><table class="wr"><tr><th></th>${rounds.map(rd=>`<th>${esc(rd.label)} ${esc(rd.from)}–${esc(rd.to)}<small>${esc(roundSum(rd))}</small></th>`).join("")}</tr>
+      ${zones.map(z=>`<tr><td class="z"><a href="#" data-go="zone" data-arg="${esc(z)}">${esc(z)}</a></td>${rounds.map(rd=>`<td>${cell(rd,z)}</td>`).join("")}</tr>`).join("")}</table></div>`:`<div class="muted">No walk-round recorded.</div>`}
+    ${sections}
+    <div class="selbar" id="selbar" hidden><span id="selN"></span><span class="row"><button class="btn btn-l" id="selClear">Clear</button><button class="btn btn-o" id="selDl">Download selected</button></span></div>
+    <div id="selOut" class="small" style="margin-top:8px"></div>`;
+  hydrate($("view"));
+  $("view").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openMedia(b.dataset.open, b.dataset.also));
+  $("view").querySelectorAll("[data-sel]").forEach(c=>c.onchange=()=>{ c.checked?selected.add(c.dataset.sel):selected.delete(c.dataset.sel); selBar(); });
+  $("selClear").onclick = ()=>{ selected.clear(); $("view").querySelectorAll("[data-sel]").forEach(c=>c.checked=false); selBar(); };
+  $("selDl").onclick = async ()=>{
+    $("selDl").disabled = true; $("selOut").textContent = "Preparing download…";
+    try{ const r = await api("apiZipSelected", [...selected], DAY.date+"_selected"); $("selOut").innerHTML = `Ready: <a href="${esc(r.url)}" target="_blank" rel="noopener"><b>Download ${esc(r.name)}</b></a>`; }
+    catch(e){ $("selOut").innerHTML = `<span class="err">${esc(e.message||e)}</span>`; }
+    $("selDl").disabled = false;
+  };
+}
+function selBar(){ $("selbar").hidden = !selected.size; $("selN").textContent = `${selected.size} file${selected.size===1?"":"s"} selected`; }
+
+/* ---------- lightbox: full photo, video plays from Drive ---------- */
+async function openMedia(id, alsoId, filesMap){
+  const F = filesMap || (DAY && DAY.files) || {}, f = F[id]; if(!f) return;
+  const gps = f.lat!=="" && f.lat!=null ? ` · GPS ${Number(f.lat).toFixed(5)}, ${Number(f.lng).toFixed(5)} ±${f.accuracy} m` : "";
+  $("lbT").innerHTML = `<b>${esc(f.label)}</b><br>${f.capturedAt?new Date(f.capturedAt).toLocaleString("en-GB"):""} · ${esc(f.zone)}${gps}`;
+  $("lbDl").href = dlUrl(f.fileId); $("lbOpen").href = viewUrl(f.fileId);
+  $("lb").hidden = false;
+  const alt = alsoId && F[alsoId] ? `<div style="text-align:center;margin-top:10px"><button class="btn btn-l" id="lbAlso">${F[alsoId].type==="video"?"▶ Play the video":"Show the photo"}</button></div>` : "";
+  if(f.type==="video"){
+    $("lbBody").innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center"><iframe src="https://drive.google.com/file/d/${encodeURIComponent(f.fileId)}/preview" allow="autoplay; fullscreen" allowfullscreen></iframe>${alt}</div>`;
+  } else {
+    $("lbBody").innerHTML = `<div class="spin" style="color:#ccc">Loading full photo…</div>`;
+    try{ const src = await api("apiPhoto", f.fileId); if($("lb").hidden) return; $("lbBody").innerHTML = `<div style="max-height:100%;display:flex;flex-direction:column;align-items:center"><img src="${src}" alt="">${alt}</div>`; }
+    catch(e){ $("lbBody").innerHTML = `<div class="err">${esc(e.message||e)}</div>`; }
+  }
+  const b = $("lbAlso"); if(b) b.onclick = ()=>openMedia(alsoId, id, F);
+}
+$("lbX").onclick = ()=>{ $("lb").hidden = true; $("lbBody").innerHTML = ""; };
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") $("lbX").click(); });
+
+/* ---------- one zone across days ---------- */
+let ZONE = null, zRound = "morning";
+async function showZone(zone){
+  loading();
+  try{ ZONE = await api("apiZone", zone); }catch(e){ return fail(e); }
+  renderZone();
+}
+function renderZone(){
+  const {zone, walk, issues} = ZONE;
+  const zones = [...new Set([...STD_ZONES, ...ZONE.zones])];
+  const byRound = walk.filter(f=>f.round===zRound);
+  const photos = byRound.filter(f=>f.type==="photo");
+  const videoOf = d => byRound.find(f=>f.type==="video" && f.date===d);
+  const map = {}; [...walk, ...issues.flatMap(i=>i.items)].forEach(f=>map[f.id]=f);
+  const dates = photos.map(p=>p.date);
+  $("view").innerHTML = `
+    <h1>Zone timeline</h1><div class="muted small">The same fixed-angle photo, day by day. Swipe through, or compare two dates side by side.</div>
+    <div class="card" style="margin-top:12px"><div class="row">
+      <label class="f">Zone<select id="zSel">${zones.map(z=>`<option ${z===zone?"selected":""}>${esc(z)}</option>`).join("")}</select></label>
+      <label class="f">Round<select id="zRound"><option value="morning">Morning</option><option value="midday">Midday</option><option value="evening">Evening</option></select></label>
+    </div></div>
+    <h2>${esc(zone)} — ${zRound} photos (${photos.length})</h2>
+    ${photos.length?`<div class="strip">${photos.slice().reverse().map(p=>`<div class="frame"><button class="thumb" data-open="${esc(p.id)}" data-also="${esc((videoOf(p.date)||{}).id||"")}"><img data-thumb="${esc(p.thumbId)}" alt=""></button>
+      <div class="cap"><b>${fmtDay(p.date)}</b><span class="muted">${hm(p.capturedAt)}${videoOf(p.date)?" · ▶ video":""}</span></div></div>`).join("")}</div>
+    <div class="card" style="margin-top:12px"><div class="row"><b>Compare</b>
+      <label class="f">Date A<select id="cA">${dates.map(d=>`<option value="${d}">${fmtDay(d)}</option>`).join("")}</select></label>
+      <label class="f">Date B<select id="cB">${dates.map(d=>`<option value="${d}">${fmtDay(d)}</option>`).join("")}</select></label></div>
+      <div class="compare" id="cmp"></div></div>`:`<div class="muted">No ${zRound} photos of ${esc(zone)} yet.</div>`}
+    <h2>Plant Welfare issues in ${esc(zone)} (${issues.length})</h2>
+    ${issues.map(i=>`<div class="entry"><div class="t"><span>${esc(String(i.label||"").split(" · ")[0])}</span><span>${i.items.length} photos/videos</span></div>
+      <div class="media">${i.items.map(f=>`<figure class="m"><button class="thumb" data-open="${esc(f.id)}"><img data-thumb="${esc(f.thumbId)}" alt="">${f.type==="video"?'<span class="play">▶</span>':""}</button>
+        <figcaption><b>${fmtDay(f.date)}</b>${esc(f.section==="carried"?"Follow-up":f.role)} · ${hm(f.capturedAt)}</figcaption></figure>`).join("")}</div></div>`).join("") || `<div class="muted">None recorded.</div>`}`;
+  $("zRound").value = zRound;
+  $("zSel").onchange = e=>go("zone", e.target.value);
+  $("zRound").onchange = e=>{ zRound = e.target.value; renderZone(); };
+  $("view").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openMedia(b.dataset.open, b.dataset.also, map));
+  if(dates.length){
+    $("cA").value = dates[0]; $("cB").value = dates[dates.length-1];
+    const cmp = async ()=>{
+      const pa = photos.find(p=>p.date===$("cA").value), pb = photos.find(p=>p.date===$("cB").value);
+      $("cmp").innerHTML = [pa,pb].map(p=>`<div class="pane"><img data-full="${esc(p.fileId)}" data-thumb="${esc(p.thumbId)}" alt=""><div class="cap"><b>${fmtDay(p.date)}</b> · ${hm(p.capturedAt)}</div></div>`).join("");
+      hydrate($("cmp"));
+      for(const img of $("cmp").querySelectorAll("img[data-full]")){ try{ img.src = await api("apiPhoto", img.dataset.full); img.removeAttribute("data-thumb"); }catch(e){} }
+    };
+    $("cA").onchange = cmp; $("cB").onchange = cmp; cmp();
+  }
+  hydrate($("view"));
+}
+
+/* ---------- start ---------- */
+if(window.google && google.script && google.script.history){
+  google.script.history.setChangeHandler(e=>{ const s=e.state||{v:"days"}; go(s.v, s.arg, false); });
+  google.script.url.getLocation(loc=>{ const [v,arg] = String(loc.hash||"").split("/"); go(v||"days", arg ? decodeURIComponent(arg) : undefined, false); });
+} else go("days", undefined, false);
+</script>
+</body>
+</html>
